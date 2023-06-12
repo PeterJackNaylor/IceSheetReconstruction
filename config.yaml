@@ -1,0 +1,26 @@
+configname: config.yaml
+epochs: 10
+trials: 5
+feature_method: [--fourier] # [--siren, --fourier, ""]
+lr: #log search
+  - 1.e-5 # min
+  - 1.e-3 # max
+bs: # power of 2 search
+  - 9 # 512 # min
+  - 13 # 2048 # max
+scale: # power of 2 search
+  - 0 # min
+  - 8 # max
+mapping_size: # power of 2 search
+  - 7 # min
+  - 11 # max
+lambda_range: #log search # For both xy and t
+  - 1.e-5 # min
+  - 1.e+1 # max
+siren:
+  hidden_num: [4, 6]
+  hidden_dim: [7, 9] # power of 2 search
+  do_skip: [1]
+act: [tanh]
+arch: [skip-5]
+verbose: 1

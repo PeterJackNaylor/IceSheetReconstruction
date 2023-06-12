@@ -1,0 +1,10 @@
+# Python 3.8
+numpy
+pandas
+xarray
+scikit-learn
+tqdm
+jupyter
+chart_studio
+optuna
+# pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cpu
