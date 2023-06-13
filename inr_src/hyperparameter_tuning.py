@@ -86,6 +86,7 @@ def objective(opt, trial):
         model_hp,
         trial=trial,
         return_model=False,
+        gpu=opt.gpu
     )
     return model_hp.best_score
 
