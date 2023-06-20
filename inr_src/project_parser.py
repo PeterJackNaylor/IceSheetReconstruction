@@ -43,6 +43,17 @@ def parser_f():
     parser.set_defaults(siren=False)
 
     parser.add_argument(
+        "--wires",
+        action="store_true",
+    )
+    parser.set_defaults(wires=False)
+
+    parser.add_argument(
+        "--wires2d",
+        action="store_true",
+    )
+    parser.set_defaults(wires2d=False)
+    parser.add_argument(
         "--gpu",
         action="store_true",
     )

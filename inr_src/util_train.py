@@ -11,16 +11,21 @@ from .LARC import LARC
 
 def clean_hp(d, gpu=False):
     for k in d.keys():
-        if k in ["fourier", "siren", "siren_skip"]:
+        if k in ["fourier", "siren", "siren_skip", 
+                 "wires", "verbose", "do_skip",
+                 ]:
             d[k] = bool(d[k])
-        elif k in []:
+        elif k in ["lr", 'width_gaussian', 'lambda_t', 'lambda_xy']:
             d[k] = float(d[k])
         elif k in [
+            "epochs",
             "bs",
             "scale",
-            "siren_hidden_num",
-            "siren_hidden_num",
-            "siren_hidden_dim",
+            "hidden_num",
+            "hidden_num",
+            "hidden_dim",
+            "output_size",
+            "input_size"
         ]:
             d[k] = int(d[k])
         elif k in ["architecture", "activation"]:
@@ -121,14 +126,17 @@ def estimate_density(
     optimizer = LARC(optimizer)
     # optimizer = LARS(optimizer=optimizer, eps=1e-8, trust_coef=0.001)
 
+    lambda_l1 = opt.lambda_l1
     lambda_t = opt.lambda_t
     lambda_xy = opt.lambda_xy
     grad = not(lambda_t == lambda_xy == 0)
 
-    loss_fn_t = nn.MSELoss()
-    loss_fn = nn.MSELoss()
-    loss_tvn = nn.MSELoss()
-    
+    loss_fn_t = nn.HuberLoss() #mseloss
+    loss_fn_l2 = nn.MSELoss()
+    loss_fn_l1 = nn.L1Loss()
+    loss_tvn = nn.HuberLoss() #or mseloss
+    # loss = loss_fn_l2 + lambda_l1 * loss_fn_l1
+
     std_data = torch.std(dataset.samples[:, 0:3], dim=0)
     mean_xyt = torch.zeros((opt.bs, 3), device=device)
     std_xyt = std_data * torch.ones((opt.bs, 3), device=device)
@@ -159,8 +167,9 @@ def estimate_density(
 
             with torch.cuda.amp.autocast():
                 target_pred = model(dataset.samples[idx])
-                lmse = loss_fn(target_pred, dataset.targets[idx])
-
+                lmse = loss_fn_l2(target_pred, dataset.targets[idx])
+                lmae = loss_fn_l1(target_pred, dataset.targets[idx])
+                loss = lmse + lambda_l1 * lmae
                 if grad:
                     ind = torch.randint(
                         0,
@@ -175,9 +184,8 @@ def estimate_density(
                     noise_xyt = torch.normal(mean_xyt, std_xyt)
                     x_sample[:, 0:3] += noise_xyt
                     dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
-                    loss = lmse + lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2]) + lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
-                else:
-                    loss = lmse
+                    loss = loss + lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2]) + lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
+
             loss.backward()
             optimizer.step()
 
@@ -197,7 +205,7 @@ def estimate_density(
                 dataset_test,
                 model,
                 opt.bs,
-                loss_fn,
+                loss_fn_l1,
                 opt.verbose,
                 device=device,
             )

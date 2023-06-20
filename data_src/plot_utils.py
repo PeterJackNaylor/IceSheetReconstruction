@@ -2,10 +2,10 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
 
-def f(time):
+def f(t):
     return datetime.fromtimestamp(t).strftime('%Y-%m-%d')
 
-def plot_scatter(pc_xy, pc_z, color_range, t, name, color, isoline=False):
+def plot_scatter(pc_xy, pc_z, color_range, t, name, color, xrange=None, yrange=None, isoline=False):
 
     if isoline:
         fig = go.Figure()
@@ -44,8 +44,8 @@ def plot_scatter(pc_xy, pc_z, color_range, t, name, color, isoline=False):
         ),
         margin=dict(l=20, r=1, t=80, b=20),
     )
-    fig.update_xaxes(range=[pc[:,0].min(), pc[:,0].max()], tickangle=0)
-    fig.update_yaxes(range=[pc[:,1].min(), pc[:,1].max()])
+    fig.update_xaxes(range=xrange, tickangle=0)
+    fig.update_yaxes(range=yrange)
     if not isoline:
         fig.update_traces(marker_size=3)
     fig.write_image(name)

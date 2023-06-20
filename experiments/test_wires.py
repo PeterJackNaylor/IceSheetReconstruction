@@ -43,6 +43,7 @@ else:
     model_hp.activation = "tanh"
 
 model_hp.lambda_t = 0.0
+model_hp.lambda_l1 = 1.0
 model_hp.lambda_xy = 0.0
 
 model, model_hp = inr.train(opt, model_hp, gpu=opt.gpu)

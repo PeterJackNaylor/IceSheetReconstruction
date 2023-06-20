@@ -43,7 +43,12 @@ def add_config_optuna_to_opt(opt, trial):
             opt.p.lambda_range[1],
             log=True,
         )
-    
+    model_hp.lambda_l1 = trial.suggest_float(
+            "lambda_l1",
+            opt.p.lambda_range[0],
+            opt.p.lambda_range[1],
+            log=True,
+        )
     model_hp.lambda_xy = trial.suggest_float(
             "lambda_xy", opt.p.lambda_range[0], opt.p.lambda_range[1], log=True
     )
@@ -132,6 +137,7 @@ def train_best_model(opt, params):
         model_hp.activation = params["act"]
 
     model_hp.lambda_t = params["lambda_t"]
+    model_hp.lambda_l1 = params["lambda_l1"]
     model_hp.lambda_xy = params["lambda_xy"]
 
     model, model_hp = train(

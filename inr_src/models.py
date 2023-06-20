@@ -461,7 +461,7 @@ class WiresExt(torch.nn.Module):
 
     # extend SIREN forward
     def forward(self, xin):
-        if True:
+        if self.do_skip:
             for i, layer in enumerate(self.model.net):
                 if i == 0:
                     x = layer(xin)
