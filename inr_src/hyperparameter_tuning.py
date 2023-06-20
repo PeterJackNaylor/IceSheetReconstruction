@@ -6,7 +6,7 @@ def add_config_optuna_to_opt(opt, trial):
     model_hp = AttrDict()
     model_hp.fourier = opt.fourier
     model_hp.siren = opt.siren
-    model_hp.wires = opt.siren
+    model_hp.wires = opt.wires
     model_hp.verbose = opt.p.verbose
     model_hp.epochs = opt.p.epochs
 
