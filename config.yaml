@@ -25,7 +25,7 @@ hidden_dim:
   - 9
 do_skip: [1]
 width_gaussion: # log search for WIRES only
-  - 0
+  - 1
   - 4
 act: [tanh]
 arch: [skip-5] # log search for RFF only

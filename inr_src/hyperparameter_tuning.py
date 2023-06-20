@@ -75,14 +75,13 @@ def add_config_optuna_to_opt(opt, trial):
         if model_hp.siren:
             model_hp.architecture = "siren"
         else:
-
-            model_hp.width_gaussion_f = trial.suggest_float(
+            model_hp.width_gaussian_f = trial.suggest_float(
                 "width_gaussion",
                 opt.p.width_gaussion[0],
                 opt.p.width_gaussion[1],
                 log=True,
             )
-            model_hp.width_gaussion = 10 ** model_hp.width_gaussion_f
+            model_hp.width_gaussian = 10 ** model_hp.width_gaussian_f
             model_hp.architecture = "wires"
     else:
         model_hp.architecture = trial.suggest_categorical(
