@@ -17,10 +17,16 @@ mapping_size: # power of 2 search
 lambda_range: #log search # For both xy and t
   - 1.e-5 # min
   - 1.e+1 # max
-siren:
-  hidden_num: [4, 6]
-  hidden_dim: [7, 9] # power of 2 search
-  do_skip: [1]
+hidden_num: # log search for SIREN and WIRES
+  - 4
+  - 6
+hidden_dim: 
+  - 7
+  - 9
+do_skip: [1]
+width_gaussion: # log search for WIRES only
+  - 0
+  - 4
 act: [tanh]
-arch: [skip-5]
+arch: [skip-5] # log search for RFF only
 verbose: 1

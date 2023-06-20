@@ -5,7 +5,7 @@ from tqdm import tqdm, trange
 import optuna
 # from torchlars import LARS
 from .LARC import LARC
-from tqdm.notebook import tqdm
+# from tqdm.notebook import tqdm
 
 
 
@@ -174,7 +174,7 @@ def estimate_density(
                     
                     noise_xyt = torch.normal(mean_xyt, std_xyt)
                     x_sample[:, 0:3] += noise_xyt
-                    dz_dxyt = continuous_diff(torch.Tensor(x_sample), model)
+                    dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
                     loss = lmse + lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2]) + lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
                 else:
                     loss = lmse

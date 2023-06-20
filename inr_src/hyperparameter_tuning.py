@@ -29,7 +29,7 @@ def add_config_optuna_to_opt(opt, trial):
         )
         model_hp.mapping_size = int(2**mapping_size_int)
 
-    if model_hp.fourier or model_hp.siren:
+    if model_hp.fourier or model_hp.siren or model_hp.wires:
         scale_int = trial.suggest_int(
             "scale_int",
             opt.p.scale[0],
@@ -48,25 +48,36 @@ def add_config_optuna_to_opt(opt, trial):
             "lambda_xy", opt.p.lambda_range[0], opt.p.lambda_range[1], log=True
     )
 
-    if model_hp.siren:
-        model_hp.architecture = "siren"
-        model_hp.siren_hidden_num = trial.suggest_int(
-            "siren_hidden_num",
-            opt.p.siren.hidden_num[0],
-            opt.p.siren.hidden_num[1],
+    if model_hp.siren or model_hp.wires:
+        model_hp.hidden_num = trial.suggest_int(
+            "hidden_num",
+            opt.p.hidden_num[0],
+            opt.p.hidden_num[1],
         )
-        siren_hidden_dim_int = trial.suggest_int(
-            "siren_hidden_dim_int",
-            opt.p.siren.hidden_dim[0],
-            opt.p.siren.hidden_dim[1],
+        hidden_dim_int = trial.suggest_int(
+            "hidden_dim_int",
+            opt.p.hidden_dim[0],
+            opt.p.hidden_dim[1],
         )
-        model_hp.siren_hidden_dim = int(2**siren_hidden_dim_int)
-        siren_do_skip_int = trial.suggest_categorical(
+        model_hp.hidden_dim = int(2**hidden_dim_int)
+        do_skip_int = trial.suggest_categorical(
             "do_skip",
-            opt.p.siren.do_skip,
+            opt.p.do_skip,
         )
-        model_hp.siren_skip = siren_do_skip_int == 1
+        model_hp.do_skip = do_skip_int == 1
 
+        if model_hp.siren:
+            model_hp.architecture = "siren"
+        else:
+
+            model_hp.width_gaussion_f = trial.suggest_float(
+                "width_gaussion",
+                opt.p.width_gaussion[0],
+                opt.p.width_gaussion[1],
+                log=True,
+            )
+            model_hp.width_gaussion = 10 ** model_hp.width_gaussion_f
+            model_hp.architecture = "wires"
     else:
         model_hp.architecture = trial.suggest_categorical(
             "architecture",
@@ -107,12 +118,15 @@ def train_best_model(opt, params):
     if model_hp.fourier:
         mapping_size_int = params["mapping_size_int"]
         model_hp.mapping_size = int(2**mapping_size_int)
-    if model_hp.siren:
-        model_hp.architecture = "siren"
-        model_hp.siren_hidden_num = params["siren_hidden_num"]
-        siren_hidden_dim_int = params["siren_hidden_dim_int"]
-        model_hp.siren_hidden_dim = int(2**siren_hidden_dim_int)
-        model_hp.siren_skip = params["do_skip"] == 1
+    if model_hp.siren or model.wires:
+        if model_hp.siren:
+            model_hp.architecture = "siren"
+        else:
+            model_hp.architecture = "wires"
+        model_hp.hidden_num = params["hidden_num"]
+        hidden_dim_int = params["hidden_dim_int"]
+        model_hp.hidden_dim = int(2**hidden_dim_int)
+        model_hp.do_skip = params["do_skip"] == 1
     else:
         model_hp.architecture = params["architecture"]
         model_hp.activation = params["act"]
