@@ -1,4 +1,4 @@
-python test_run.py \
+python experiments/test_run.py \
     --path data/test_data.npy \
     --name wires_optuna \
     --yaml_file ./config.yaml \
