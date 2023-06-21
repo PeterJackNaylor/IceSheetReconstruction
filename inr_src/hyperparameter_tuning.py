@@ -127,7 +127,7 @@ def train_best_model(opt, params):
     if model_hp.fourier:
         mapping_size_int = params["mapping_size_int"]
         model_hp.mapping_size = int(2**mapping_size_int)
-    if model_hp.siren or model.wires:
+    if model_hp.siren or model_hp.wires:
         if model_hp.siren:
             model_hp.architecture = "siren"
         else:
