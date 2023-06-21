@@ -1,3 +1,5 @@
+import torch
+
 from .training import train
 from .project_parser import AttrDict
 
@@ -104,6 +106,7 @@ def objective(opt, trial):
         return_model=False,
         gpu=opt.gpu
     )
+    torch.cuda.empty_cache()
     return model_hp.best_score
 
 
