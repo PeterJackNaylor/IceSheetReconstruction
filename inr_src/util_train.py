@@ -237,7 +237,7 @@ def estimate_density(
         end = time.time()
         minutes, _ = divmod(end - start, 60)
 
-        if not gpu and minutes > 20:
+        if not gpu and minutes > 5:
             # it surely isn't using the gpu
             break
 
