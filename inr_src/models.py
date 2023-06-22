@@ -301,6 +301,10 @@ class SIREN(torch.nn.Module):
         )
         # self.model = RFF(in_dim, out_dim, hidden_num, hidden_dim,
         # 'relu', feature_dim=1024, feature_scale=feature_scales[0] )
+        if args.normalise_targets:
+            self.final_act = torch.tanh
+        else:
+            self.final_act = nn.Identity()
         self.do_skip = args.do_skip
 
     # extend SIREN forward
@@ -316,7 +320,7 @@ class SIREN(torch.nn.Module):
         else:
             out = self.model(xin)
         # out = torch.squeeze(out)
-        return torch.tanh(out)
+        return self.final_act(out)
 
 
 class RealGaborLayer(nn.Module):
@@ -457,6 +461,11 @@ class WiresExt(torch.nn.Module):
                     hidden_omega_0=args.scale, scale=args.width_gaussian)
         # self.model = RFF(in_dim, out_dim, hidden_num, hidden_dim,
         # 'relu', feature_dim=1024, feature_scale=feature_scales[0] )
+        if args.normalise_targets:
+            self.final_act = torch.tanh
+        else:
+            self.final_act = nn.Identity()
+
         self.do_skip = args.do_skip
 
     # extend SIREN forward
@@ -474,4 +483,4 @@ class WiresExt(torch.nn.Module):
         else:
             out = self.model(xin)
         # out = torch.squeeze(out)
-        return torch.tanh(out)
+        return self.final_act(out)

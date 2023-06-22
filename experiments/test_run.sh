@@ -2,6 +2,7 @@ python experiments/test_run.py \
     --path data/test_data.npy \
     --name wires_optuna \
     --yaml_file ./config.yaml \
-    --wires
+    --fourrier #\
+#    --normalise_targets
 #    --gpu \
-#    --siren --fourier
+#    --siren --wires

@@ -11,7 +11,8 @@ opt = inr.AttrDict()
 opt.path = path
 opt.gpu = gpu
 opt.model_name = "wires" # or siren or wires
-opt.name = "wires_20_06"
+opt.name = "wires_22_06"
+opt.normalise_targets = False
 model_hp = inr.AttrDict()
 
 
@@ -22,6 +23,7 @@ opt.wires = opt.model_name == "wires"
 model_hp.fourier = opt.model_name == "RFF"
 model_hp.siren = opt.model_name == "siren"
 model_hp.wires = opt.model_name == "wires"
+model_hp.normalise_targets = opt.normalise_targets
 model_hp.verbose = True
 model_hp.epochs = 50
 
@@ -43,7 +45,7 @@ else:
     model_hp.activation = "tanh"
 
 model_hp.lambda_t = 0.0
-model_hp.lambda_l1 = 1.0
+model_hp.lambda_l1 = 0.0
 model_hp.lambda_xy = 0.0
 
 model, model_hp = inr.train(opt, model_hp, gpu=opt.gpu)

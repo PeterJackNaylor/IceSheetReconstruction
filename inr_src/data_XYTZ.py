@@ -23,6 +23,7 @@ class XYTZ(Dataset):
         step_grid=2.0,
         nv=None,
         nv_targets=None,
+        normalise_targets=True,
         gpu=False
     ):
         self.need_target = not pred_type == "grid"
@@ -43,6 +44,8 @@ class XYTZ(Dataset):
 
         nv_samples = self.normalize(samples, nv, True)
         if self.need_target:
+            if not normalise_targets:
+                nv_targets = [(0, 1) for _ in range(targets.shape[1])]
             nv_targets = self.normalize(targets, nv_targets, True)
 
         self.samples = torch.tensor(samples).float()
@@ -145,9 +148,10 @@ def return_dataset_prediction(
 
 def return_dataset(
     path,
+    normalise_targets=True,
     gpu=False
 ):
-
+    nv_targets = None
     xytz_train = XYTZ(
         path,
         train_fold=True,
@@ -155,6 +159,7 @@ def return_dataset(
         seed=42,
         pred_type="pc",
         nv=None,
+        normalise_targets=normalise_targets,
         gpu=gpu
     )
     nv = xytz_train.nv_samples

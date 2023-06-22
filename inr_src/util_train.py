@@ -6,8 +6,8 @@ import optuna
 # from torchlars import LARS
 from .LARC import LARC
 # from tqdm.notebook import tqdm
-
-
+import time
+# I added the time so that if gpu not one, and an epoch is more than 30 mins, cut! ^^
 
 def clean_hp(d, gpu=False):
     for k in d.keys():
@@ -151,6 +151,7 @@ def estimate_density(
         e_iterator = range(1, opt.epochs + 1)
 
     for epoch in e_iterator:
+        start = time.time()
         running_loss, total_num = 0.0, 0
         n_data = len(dataset)
         batch_idx = torch.randperm(n_data, device=device)
@@ -184,7 +185,9 @@ def estimate_density(
                     noise_xyt = torch.normal(mean_xyt, std_xyt)
                     x_sample[:, 0:3] += noise_xyt
                     dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
-                    loss = loss + lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2]) + lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
+                    loss = loss + \
+                        lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2]) + \
+                        lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
 
             loss.backward()
             optimizer.step()
@@ -221,15 +224,22 @@ def estimate_density(
                     g["lr"] = g["lr"] / 10
             if early_stopper.early_stop(test_score):
                 break
+            # Add prune mechanism
+            if trial:
+                trial.report(test_score, epoch)
+
+                if trial.should_prune():
+                    raise optuna.exceptions.TrialPruned()
 
         if not torch.isfinite(loss):
             break
-        # Add prune mechanism
-        if trial:
-            trial.report(lmse, epoch)
 
-            if trial.should_prune():
-                raise optuna.exceptions.TrialPruned()
+        end = time.time()
+        minutes, _ = divmod(end - start, 60)
+
+        if not gpu and minutes > 20:
+            # it surely isn't using the gpu
+            break
 
     if return_model:
         model.load_state_dict(torch.load(name))

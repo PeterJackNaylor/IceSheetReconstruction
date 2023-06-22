@@ -7,6 +7,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
 
     train, test, nv, nv_target = return_dataset(
         opt.path,
+        normalise_targets=opt.normalise_targets,
         gpu=gpu
     )
     
@@ -14,6 +15,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     model_hp.output_size = len(nv_target)
     model_hp.nv = nv
     model_hp.nv_target = nv_target
+    model_hp.normalise_targets = opt.normalise_targets
 
     if model_hp.fourier:
         model_hp.B = gen_b(

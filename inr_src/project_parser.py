@@ -60,11 +60,16 @@ def parser_f():
     parser.set_defaults(gpu=False)
 
     parser.add_argument(
+        "--normalise_targets",
+        action="store_true",
+    )
+    parser.set_defaults(normalise_targets=False)
+
+    parser.add_argument(
         "--name",
         default="last",
         type=str,
     )
-
     parser.add_argument(
         "--yaml_file",
         default="config.yaml",
