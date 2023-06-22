@@ -132,6 +132,9 @@ def train_best_model(opt, params):
             model_hp.architecture = "siren"
         else:
             model_hp.architecture = "wires"
+            model_hp.width_gaussian_f = params["width_gaussion"]
+            model_hp.width_gaussian = 10 ** model_hp.width_gaussian_f
+
         model_hp.hidden_num = params["hidden_num"]
         hidden_dim_int = params["hidden_dim_int"]
         model_hp.hidden_dim = int(2**hidden_dim_int)
