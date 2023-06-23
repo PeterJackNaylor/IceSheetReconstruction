@@ -171,6 +171,7 @@ def return_dataset(
         seed=42,
         pred_type="pc",
         nv=nv,
+        nv_targets=nv_targets,
         gpu=gpu
     )
 
