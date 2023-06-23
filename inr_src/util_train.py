@@ -218,7 +218,7 @@ def estimate_density(
                 dataset_test,
                 model,
                 opt.bs,
-                loss_fn_l1,
+                loss_fn_l2,
                 opt.verbose,
                 device=device,
             )
