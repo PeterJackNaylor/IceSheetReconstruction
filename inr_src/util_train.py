@@ -124,6 +124,7 @@ def estimate_density(
     trial=None,
     return_model=True,
     gpu=False,
+    clip_gradients=True,
 ):
     device = "cuda" if gpu else "cpu"
     name = "meta/" + name + ".pth"
@@ -199,7 +200,10 @@ def estimate_density(
                         lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2]) + \
                         lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
 
+            # Clip gradients
             loss.backward()
+            if clip_gradients:
+                nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
             if opt.verbose:
