@@ -9,6 +9,16 @@ from .LARC import LARC
 import time
 # I added the time so that if gpu not one, and an epoch is more than 30 mins, cut! ^^
 
+class RMSELoss(nn.Module):
+    def __init__(self, eps=1e-6):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        self.eps = eps
+        
+    def forward(self,yhat,y):
+        loss = torch.sqrt(self.mse(yhat,y) + self.eps)
+        return loss
+
 def clean_hp(d, gpu=False):
     for k in d.keys():
         if k in ["fourier", "siren", "siren_skip", 
@@ -131,10 +141,10 @@ def estimate_density(
     lambda_xy = opt.lambda_xy
     grad = not(lambda_t == lambda_xy == 0)
 
-    loss_fn_t = nn.HuberLoss() #mseloss
-    loss_fn_l2 = nn.MSELoss()
+    loss_fn_t = RMSELoss() #mseloss
+    loss_fn_l2 = RMSELoss()
     loss_fn_l1 = nn.L1Loss()
-    loss_tvn = nn.HuberLoss() #or mseloss
+    loss_tvn = RMSELoss() #or mseloss
     # loss = loss_fn_l2 + lambda_l1 * loss_fn_l1
 
     std_data = torch.std(dataset.samples[:, 0:3], dim=0)
@@ -232,12 +242,14 @@ def estimate_density(
                     raise optuna.exceptions.TrialPruned()
 
         if not torch.isfinite(loss):
+            best_test_score = np.inf
             break
 
         end = time.time()
         minutes, _ = divmod(end - start, 60)
 
         if not gpu and minutes > 5:
+            best_test_score = np.inf
             # it surely isn't using the gpu
             break
 

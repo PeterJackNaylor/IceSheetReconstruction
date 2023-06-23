@@ -4,7 +4,7 @@ trials: 5
 feature_method: [--fourier] # [--siren, --fourier, ""]
 lr: #log search
   - 1.e-5 # min
-  - 1.e-3 # max
+  - 1.e-1 # max
 bs: # power of 2 search
   - 9 # 512 # min
   - 13 # 2048 # max
@@ -19,7 +19,7 @@ lambda_range: #log search # For both xy and t
   - 1.e+1 # max
 hidden_num: # log search for SIREN and WIRES
   - 4
-  - 6
+  - 8
 hidden_dim: 
   - 7
   - 9
