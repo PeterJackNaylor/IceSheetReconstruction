@@ -51,6 +51,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         model, best_score = outputs
         model_hp.best_score = best_score
     else:
+        best_score = outputs
         model_hp.best_score = best_score
 
     np.savez(
