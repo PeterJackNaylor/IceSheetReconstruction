@@ -23,9 +23,10 @@ def clean_hp(d, gpu=False):
     for k in d.keys():
         if k in ["fourier", "siren", "siren_skip", 
                  "wires", "verbose", "do_skip",
+                 "normalise_targets"
                  ]:
             d[k] = bool(d[k])
-        elif k in ["lr", 'width_gaussian', 'lambda_t', 'lambda_xy']:
+        elif k in ["lr", 'width_gaussian', 'lambda_t', 'lambda_xy', 'lambda_l1']:
             d[k] = float(d[k])
         elif k in [
             "epochs",
