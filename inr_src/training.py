@@ -47,15 +47,17 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     
     if "B" in model_hp.keys():
         model_hp.B = np.array(model_hp.B.cpu())
-    
+    if return_model:
+        model, best_score = outputs
+        model_hp.best_score = best_score
+    else:
+        model_hp.best_score = best_score
+
     np.savez(
         "meta/" + opt.name + ".npz",
         **model_hp,
     )
     if return_model:
-        model, best_score = outputs
-        model_hp.best_score = best_score
         return model, model_hp
     else:
-        model_hp.best_score = outputs
         return model_hp
