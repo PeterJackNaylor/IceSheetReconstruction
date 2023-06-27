@@ -4,6 +4,8 @@ from inr_src import parser_f, objective, train_best_model
 
 def main():
     options = parser_f()
+    print("need to do something for this")
+    options.outname = options.name
 
     study = optuna.create_study(
         study_name=options.name,

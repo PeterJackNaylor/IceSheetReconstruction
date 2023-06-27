@@ -123,7 +123,7 @@ def estimate_density(
     dataset_test,
     model,
     opt,
-    name,
+    outname,
     trial=None,
     return_model=True,
     temporal=True,
@@ -131,7 +131,7 @@ def estimate_density(
     clip_gradients=True,
 ):
     device = "cuda" if gpu else "cpu"
-    name = "meta/" + name + ".pth"
+    outname = outname + ".pth"
 
     early_stopper = EarlyStopper(patience=15)
     optimizer = torch.optim.Adam(
@@ -221,7 +221,7 @@ def estimate_density(
 
         if epoch == 1:
             if return_model:
-                torch.save(model.state_dict(), name)
+                torch.save(model.state_dict(), outname)
         if epoch % 5 == 0:
             test_score = test_loop(
                 dataset_test,
@@ -237,7 +237,7 @@ def estimate_density(
                 if opt.verbose:
                     print(f"best model is now from epoch {epoch}")
                 if return_model:
-                    torch.save(model.state_dict(), name)
+                    torch.save(model.state_dict(), outname)
             if epoch - best_epoch > 10:
                 for g in optimizer.param_groups:
                     g["lr"] = g["lr"] / 10
@@ -263,7 +263,7 @@ def estimate_density(
             break
 
     if return_model:
-        model.load_state_dict(torch.load(name))
+        model.load_state_dict(torch.load(outname))
         return model, best_test_score
     else:
         return best_test_score

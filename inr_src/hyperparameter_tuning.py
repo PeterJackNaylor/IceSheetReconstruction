@@ -155,7 +155,7 @@ def train_best_model(opt, params):
     )
 
     np.savez(
-        "meta/" + opt.name + ".npz",
+        opt.outname + ".npz",
         **model_hp,
     )
 
