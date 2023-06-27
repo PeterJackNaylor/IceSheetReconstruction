@@ -125,6 +125,7 @@ def estimate_density(
     name,
     trial=None,
     return_model=True,
+    temporal=True,
     gpu=False,
     clip_gradients=True,
 ):
@@ -149,10 +150,10 @@ def estimate_density(
     loss_fn_l1 = nn.L1Loss()
     loss_tvn = RMSELoss() #or mseloss
     # loss = loss_fn_l2 + lambda_l1 * loss_fn_l1
-
-    std_data = torch.std(dataset.samples[:, 0:3], dim=0)
-    mean_xyt = torch.zeros((opt.bs, 3), device=device)
-    std_xyt = std_data * torch.ones((opt.bs, 3), device=device)
+    s = 3 if temporal else 2
+    std_data = torch.std(dataset.samples[:, 0:s], dim=0)
+    mean_xyt = torch.zeros((opt.bs, s), device=device)
+    std_xyt = std_data * torch.ones((opt.bs, s), device=device)
     
     model.train()
     best_test_score = np.inf
@@ -196,11 +197,12 @@ def estimate_density(
                     x_sample.requires_grad_(False)
                     
                     noise_xyt = torch.normal(mean_xyt, std_xyt)
-                    x_sample[:, 0:3] += noise_xyt
+                    x_sample[:, 0:s] += noise_xyt
                     dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
                     loss = loss + \
-                        lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2]) + \
-                        lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
+                        lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2])
+                    if temporal:
+                        loss += lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
 
             # Clip gradients
             loss.backward()

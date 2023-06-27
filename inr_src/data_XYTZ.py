@@ -25,11 +25,12 @@ class XYTZ(Dataset):
         nv=None,
         nv_targets=None,
         normalise_targets=True,
+        temporal=True,
         gpu=False
     ):
         self.need_target = not pred_type == "grid"
         self.nv = nv
-        self.input_size = 3
+        self.input_size = 3 if temporal else 2
         self.step_grid = step_grid
 
         pc = np.load(path)
@@ -38,10 +39,12 @@ class XYTZ(Dataset):
             samples, targets = self.setup_data(pc)
             idx = split_train(samples.shape[0], seed, train_fraction, train_fold)
             samples = samples[idx]
+            if not temporal:
+                samples = samples[:, 0:2]
             targets = targets[idx]
 
         elif pred_type == "grid":
-            samples = self.setup_uniform_grid(pc)
+            samples = self.setup_uniform_grid(pc, time)
 
         nv_samples = self.normalize(samples, nv, True)
         if self.need_target:
@@ -89,7 +92,7 @@ class XYTZ(Dataset):
 
         return nv
 
-    def setup_uniform_grid(self, pc, time):
+    def setup_uniform_grid(self, pc, time, temporal):
 
         xmax = pc[:,0].max()
         xmin = pc[:,0].min()
@@ -103,9 +106,11 @@ class XYTZ(Dataset):
         )
         xx = xx.astype(float)
         yy = yy.astype(float)
-        
-        time = np.zeros_like(yy.ravel()) + time
-        samples = np.vstack([xx.ravel(), yy.ravel(), time]).T
+        if temporal:
+            time = np.zeros_like(yy.ravel()) + time
+            samples = np.vstack([xx.ravel(), yy.ravel(), time]).T
+        else:
+            samples = np.vstack([xx.ravel(), yy.ravel()]).T
         return samples
 
     def __len__(self):
@@ -120,13 +125,13 @@ class XYTZ(Dataset):
 
 
 class XYTZ_grid(XYTZ):
-    def __init__(self, grid, time, nv=None, step_grid=1, gpu=False):
+    def __init__(self, grid, time, nv=None, step_grid=1, temporal=False, gpu=False):
 
         self.need_target = False
         self.nv = nv
         self.input_size = 3
         self.step_grid = step_grid
-        samples = self.setup_uniform_grid(grid, time)
+        samples = self.setup_uniform_grid(grid, time, temporal=temporal)
         self.normalize(samples, nv, True)
 
         self.samples = torch.tensor(samples).float()
@@ -138,10 +143,12 @@ class XYTZ_grid(XYTZ):
 def return_dataset_prediction(
     path,
     nv=None,
+    temporal=True
 ):
     xytz = XYTZ(
         path,
         pred_type="grid_predictions",
+        temporal=temporal,
         nv=nv,
     )
     return xytz
@@ -150,6 +157,7 @@ def return_dataset_prediction(
 def return_dataset(
     path,
     normalise_targets=True,
+    temporal=True,
     gpu=False
 ):
     nv_targets = None
@@ -161,6 +169,7 @@ def return_dataset(
         pred_type="pc",
         nv=None,
         normalise_targets=normalise_targets,
+        temporal=temporal,
         gpu=gpu
     )
     nv = xytz_train.nv_samples
@@ -173,6 +182,7 @@ def return_dataset(
         pred_type="pc",
         nv=nv,
         nv_targets=nv_targets,
+        temporal=temporal,
         gpu=gpu
     )
 

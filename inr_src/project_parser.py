@@ -66,6 +66,18 @@ def parser_f():
     parser.set_defaults(normalise_targets=False)
 
     parser.add_argument(
+        "--no_time",
+        action="store_true",
+    )
+    parser.add_argument('--time',
+                        dest='temporal',
+                        action='store_true')
+    parser.add_argument('--no-time',
+                        dest='temporal',
+                        action='store_false')
+    parser.set_defaults(temporal=False)
+
+    parser.add_argument(
         "--name",
         default="last",
         type=str,
@@ -76,18 +88,8 @@ def parser_f():
         type=str,
     )
 
-    # parser.add_argument(
-    #     "--lambda_reg",
-    #     default=1e-4,
-    #     type=float,
-    # )
-    # parser.set_defaults(ablation=False)
-
     args = parser.parse_args()
-
     args.p = read_yaml(args.yaml_file)
-    # if args.siren:
-    #     args.p.siren = AttrDict(args.p.siren)
-
     args.p.verbose = args.p.verbose == 1
+
     return args

@@ -12,7 +12,7 @@ def get_dataset_from_xarray(path):
     df = df.reset_index(drop=True)
     return df.to_numpy()
 
-def main():
+def one_single_file():
     files = glob("../data/*/*Baseline_E_Swath.nc")
 
     list_arrays = []
@@ -22,8 +22,38 @@ def main():
     full_data = np.concatenate(list_arrays, axis=0)
     coherence = full_data[:, -1]
     np.save("coherence.npy", coherence)
-    import pdb; pdb.set_trace()
     np.save("test_data.npy", full_data[:, :-1])
 
+def monthly_file():
+    for numb, name in [("01", "Jan"), ("02", "Feb"), ("03", "Mar")]:
+        files = glob(f"data/{numb}/*Baseline_E_Swath.nc")
+
+        list_arrays = []
+        for f in tqdm(files):
+            array = get_dataset_from_xarray(f)
+            list_arrays.append(array)
+        full_data = np.concatenate(list_arrays, axis=0)
+        coherence = full_data[:, -1]
+        np.save(f"{name}_coherence.npy", coherence)
+        np.save(f"{name}_data.npy", full_data[:, :-1])
+
+def small_one_single_file():
+    files = glob("../data/*/*Baseline_E_Swath.nc")
+    files_keep = []
+    for numb in ["01", "02", "03"]:
+        files = glob(f"data/{numb}/*Baseline_E_Swath.nc")
+        files.sort()
+        files_keep.append(files[0])
+    
+    list_arrays = []
+    for f in tqdm(files_keep):
+        array = get_dataset_from_xarray(f)
+        list_arrays.append(array)
+    full_data = np.concatenate(list_arrays, axis=0)
+    coherence = full_data[:, -1]
+    np.save("small_coherence.npy", coherence)
+    np.save("small_test_data.npy", full_data[:, :-1])
+
+
 if __name__ == "__main__":
-    main()
+    small_one_single_file()
