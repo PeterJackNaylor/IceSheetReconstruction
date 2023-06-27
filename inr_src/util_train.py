@@ -94,8 +94,9 @@ def test_loop(dataset, model, bs, loss_fn, verbose, device="cpu"):
             idx = batch_idx[i : (i + bs)]
             pred = model(dataset.samples[idx])
             test_loss = test_loss + loss_fn(pred, dataset.targets[idx]).item()
-
+    num_batches = torch.max(num_batches, 1)
     test_loss /= num_batches
+    
     if verbose:
         print(f"Test Error: Avg loss: {test_loss:>8f}")
     return test_loss
