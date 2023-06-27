@@ -66,10 +66,11 @@ class EarlyStopper:
         return False
 
 
-def predict_loop(dataset, bs, model, device="cpu"):
+def predict_loop(dataset, bs, model, device="cpu", verbose=True):
     n_data = len(dataset)
     batch_idx = torch.arange(0, n_data, dtype=int, device=device)
-    train_iterator = tqdm(range(0, n_data, bs))
+    range_ = range(0, n_data, bs)
+    train_iterator = tqdm(range_) if verbose else range_
     preds = []
     with torch.no_grad():
         for i in train_iterator:

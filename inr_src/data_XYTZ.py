@@ -7,7 +7,8 @@ from torch.utils.data import Dataset
 def split_train(n, seed, train_fraction, train):
     idx = np.arange(n)
     np.random.seed(seed)
-    np.random.shuffle(idx)
+    if train_fraction != 0.0 and train_fraction != 1.0:
+        np.random.shuffle(idx)
     n0 = int(n * train_fraction)
     idx = idx[:n0] if train else idx[n0:]
     return idx 

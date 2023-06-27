@@ -2,7 +2,7 @@ import torch
 
 from .training import train
 from .project_parser import AttrDict
-
+import numpy as np
 
 def add_config_optuna_to_opt(opt, trial):
     model_hp = AttrDict()
@@ -153,3 +153,10 @@ def train_best_model(opt, params):
         trial=None,
         return_model=True,
     )
+
+    np.savez(
+        "meta/" + opt.name + ".npz",
+        **model_hp,
+    )
+
+    return model, model_hp

@@ -54,10 +54,6 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         best_score = outputs
         model_hp.best_score = best_score
 
-    np.savez(
-        "meta/" + opt.name + ".npz",
-        **model_hp,
-    )
     if return_model:
         return model, model_hp
     else:

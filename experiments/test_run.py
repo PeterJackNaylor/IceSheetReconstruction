@@ -18,8 +18,8 @@ def main():
 
     best_params = study.best_trial.params
 
-    _, score = train_best_model(options, best_params)
-    print(f"best score: {score}")
+    _, model_hp = train_best_model(options, best_params)
+    print(f"best score: {model_hp.best_score}")
     for key, value in best_params.items():
         print("{}: {}".format(key, value))
 
