@@ -41,7 +41,7 @@ process INR {
 }
 
 
-pyfile = file("experiments/regroup.py")
+pyfile_group = file("experiments/regroup.py")
 process group {
     publishDir "nf_meta/", overwrite: true
 
