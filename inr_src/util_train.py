@@ -183,7 +183,6 @@ def estimate_density(
 
             with torch.cuda.amp.autocast():
                 target_pred = model(dataset.samples[idx])
-                import pdb; pdb.set_trace()
                 lmse = loss_fn_l2(target_pred, dataset.targets[idx])
                 lmae = loss_fn_l1(target_pred, dataset.targets[idx])
                 loss = lmse + lambda_l1 * lmae
