@@ -36,7 +36,7 @@ process INR {
             --path ${datafolder}/${data}.npy \
             --name ${name} \
             --yaml_file ${config} \
-            --${met} --gpu
+            --${met} --gpu ${opt2}
         """
 }
 
