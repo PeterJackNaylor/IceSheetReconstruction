@@ -65,10 +65,6 @@ def parser_f():
     )
     parser.set_defaults(normalise_targets=False)
 
-    parser.add_argument(
-        "--no_time",
-        action="store_true",
-    )
     parser.add_argument('--time',
                         dest='temporal',
                         action='store_true')
