@@ -152,6 +152,7 @@ def train_best_model(opt, params):
         model_hp,
         trial=None,
         return_model=True,
+        gpu=opt.gpu,
     )
 
     np.savez(
