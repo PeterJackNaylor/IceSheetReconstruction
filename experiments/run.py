@@ -1,6 +1,13 @@
+import os
 import optuna
 from functools import partial
 from inr_src import parser_f, objective, train_best_model
+
+def clean_up_path(name, trial, ntrials):
+    for t in range(ntrials):
+        pth_name = name + f"_trial_{t}" + ".pth"
+        if t != trial:
+            os.remove(pth_name)
 
 def main():
     options = parser_f()
@@ -18,10 +25,10 @@ def main():
 
     study.optimize(obj, n_trials=options.p.trials)
 
+    # _, model_hp = train_best_model(options, best_params)
+    print(f"best score: {study.best_value}")
+    clean_up_path(options.name, study.best_trial, options.p.trials)
     best_params = study.best_trial.params
-
-    _, model_hp = train_best_model(options, best_params)
-    print(f"best score: {model_hp.best_score}")
     for key, value in best_params.items():
         print("{}: {}".format(key, value))
 
