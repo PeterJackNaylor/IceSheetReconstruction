@@ -35,6 +35,11 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     if gpu:
         model = model.cuda()
     
+    if return_model:
+        np.savez(
+                opt.tmp_name + ".npz",
+                **model_hp,
+            )
     outputs = estimate_density(
         train,
         test,
