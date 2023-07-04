@@ -57,6 +57,10 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         model_hp.best_score = best_score
 
     if return_model:
+        np.savez(
+                opt.tmp_name + ".npz",
+                **model_hp,
+            )
         return model, model_hp
     else:
         return model_hp

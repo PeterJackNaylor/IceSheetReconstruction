@@ -6,10 +6,13 @@ from inr_src import parser_f, objective#, train_best_model
 def clean_up_path(name, trial, ntrials):
     for t in range(ntrials):
         pth_name = name + f"_trial_{t}" + ".pth"
-        if t != trial:
+        npz_name = name + f"_trial_{t}" + ".npz"
+        if t != trial.number:
             os.remove(pth_name)
+            os.remove(npz_name)
         else:
             os.rename(pth_name, name + ".pth")
+            os.rename(npz_name, name + ".npz")
 
 def main():
     options = parser_f()
