@@ -40,7 +40,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         test,
         model,
         model_hp,
-        opt.name,
+        opt.tmp_name,
         trial=trial,
         return_model=return_model,
         temporal=opt.temporal,

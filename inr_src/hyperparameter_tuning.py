@@ -97,7 +97,7 @@ def add_config_optuna_to_opt(opt, trial):
 def objective(opt, trial):
 
     model_hp = add_config_optuna_to_opt(opt, trial)
-    opt.name = opt.name + f"_trial_{trial.number}"
+    opt.tmp_name = opt.name + f"_trial_{trial.number}"
     _, model_hp = train(
         opt,
         model_hp,

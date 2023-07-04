@@ -8,6 +8,8 @@ def clean_up_path(name, trial, ntrials):
         pth_name = name + f"_trial_{t}" + ".pth"
         if t != trial:
             os.remove(pth_name)
+        else:
+            os.rename(pth_name, name + ".pth")
 
 def main():
     options = parser_f()
