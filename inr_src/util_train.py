@@ -248,6 +248,14 @@ def estimate_density(
                 trial.report(test_score, epoch)
 
                 if trial.should_prune():
+                    if return_model:
+                        if "B" in opt.keys():
+                            opt.B = np.array(opt.B.cpu())
+                        opt.best_score = best_test_score
+                        np.savez(
+                                outname.replace(".pth", ".npz"),
+                                **opt,
+                            )
                     raise optuna.exceptions.TrialPruned()
 
         if not torch.isfinite(loss):
