@@ -166,7 +166,6 @@ def estimate_density(
         e_iterator = range(1, opt.epochs + 1)
 
     for epoch in e_iterator:
-        start = time.time()
         running_loss, total_num = 0.0, 0
         n_data = len(dataset)
         batch_idx = torch.randperm(n_data, device=device)
@@ -259,15 +258,6 @@ def estimate_density(
                     raise optuna.exceptions.TrialPruned()
 
         if not torch.isfinite(loss):
-            best_test_score = np.inf
-            break
-
-        end = time.time()
-        minutes, _ = divmod(end - start, 60)
-
-        if not gpu and minutes > 5:
-            best_test_score = np.inf
-            # it surely isn't using the gpu
             break
 
     if return_model:
