@@ -115,6 +115,7 @@ def continuous_diff(x, model):
         torch.ones_like(y),
         create_graph=True,
     )[0]
+
     return dz_dxy
 
 
@@ -179,8 +180,8 @@ def estimate_density(
 
             idx = batch_idx[i : (i + bs)]
             optimizer.zero_grad()
-
-            with torch.cuda.amp.autocast():
+            if True:
+            #with torch.cuda.amp.autocast():
                 target_pred = model(dataset.samples[idx])
                 lmse = loss_fn_l2(target_pred, dataset.targets[idx])
                 lmae = loss_fn_l1(target_pred, dataset.targets[idx])
