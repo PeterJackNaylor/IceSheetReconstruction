@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 gpu = torch.cuda.is_available()
 device = "cuda" if gpu else "cpu"
 tdevice = torch.device(device)
-path_f = "data/{}.npz"
+path_f = "../data/{}.npz"
 
 table = pd.DataFrame()
 files = glob("*.npz")
@@ -19,11 +19,11 @@ for f in files:
     table.loc[f.split(".")[0], "L2"] = score
 
     opt = inr.AttrDict()
-    opt.name = "wires_optuna_unnormalized_clipped"
+    opt.name = f.split(".")[0]
     ## From saved
-    npz = np.load(f"meta/{opt.name}.npz")
+    npz = np.load(f"{opt.name}.npz")
 
-    weights = f"meta/{opt.name}.pth"
+    weights = f"{opt.name}.pth"
 
     model_hp = inr.AttrDict(npz)
 
@@ -43,7 +43,7 @@ for f in files:
     print(f"loading weight: {weights}")
     print(f"Model_hp: {model_hp}")
     model.load_state_dict(torch.load(weights, map_location=tdevice))
-    import pdb; pdb.set_trace()
+    import pdb; pdb.set_tfrace()
     xytz_ds = inr.XYTZ(
             path_f.format(),
             train_fold=False,
