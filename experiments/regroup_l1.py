@@ -43,9 +43,11 @@ for f in files:
     print(f"loading weight: {weights}")
     print(f"Model_hp: {model_hp}")
     model.load_state_dict(torch.load(weights, map_location=tdevice))
-    import pdb; pdb.set_tfrace()
+    data_name = opt.name.replace(model_hp.architecture + "_", "")
+    if model_hp.normalise_targets:
+        data_name = data_name.replace("_normalise", "")
     xytz_ds = inr.XYTZ(
-            path_f.format(),
+            path_f.format(data_name),
             train_fold=False,
             train_fraction=0.0,
             seed=42,
