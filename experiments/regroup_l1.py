@@ -40,12 +40,15 @@ for f in files:
         arch=model_hp.architecture,
         args=model_hp,
     )
-    print(f"loading weight: {weights}")
-    print(f"Model_hp: {model_hp}")
+    # print(f"loading weight: {weights}")
+    # print(f"Model_hp: {model_hp}")
     model.load_state_dict(torch.load(weights, map_location=tdevice))
     data_name = opt.name.replace(model_hp.architecture + "_", "")
+    if model_hp.fourier:
+        data_name = opt.name.replace("fourier" + "_", "")
     if model_hp.normalise_targets:
         data_name = data_name.replace("_normalise", "")
+
     temporal = model_hp.nv.shape[1] == 3
     xytz_ds = inr.XYTZ(
             path_f.format(data_name),
@@ -68,6 +71,7 @@ for f in files:
     table.loc[f.split(".")[0], "L2_recomp"] = mse
     table.loc[f.split(".")[0], "L1_recomp"] = mae
 
+    import pdb; pdb.set_trace()
 import pdb; pdb.set_trace()
 table.to_csv("aggreg.csv", index=False)
 
