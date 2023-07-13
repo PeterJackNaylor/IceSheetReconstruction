@@ -5,10 +5,10 @@ import torch
 import inr_src as inr
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-gpu = torch.cuda.is_available()
+gpu = False #torch.cuda.is_available()
 device = "cuda" if gpu else "cpu"
 tdevice = torch.device(device)
-path_f = "../data/{}.npz"
+path_f = "../data/{}.npy"
 
 table = pd.DataFrame()
 files = glob("*.npz")
@@ -46,6 +46,7 @@ for f in files:
     data_name = opt.name.replace(model_hp.architecture + "_", "")
     if model_hp.normalise_targets:
         data_name = data_name.replace("_normalise", "")
+    temporal = model_hp.nv.shape[1] == 3
     xytz_ds = inr.XYTZ(
             path_f.format(data_name),
             train_fold=False,
@@ -54,6 +55,7 @@ for f in files:
             pred_type="pc",
             nv=tuple(model_hp.nv),
             nv_targets=tuple(model_hp.nv_target),
+            temporal=temporal,
             normalise_targets=model_hp.normalise_targets,
             gpu=gpu
         )
