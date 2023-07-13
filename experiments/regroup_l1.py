@@ -68,10 +68,10 @@ for f in files:
 
     mse = mean_squared_error(xytz_ds.targets, prediction) * model_hp.nv_target[0,1]
     mae = mean_absolute_error(xytz_ds.targets, prediction) * model_hp.nv_target[0,1]
-    table.loc[f.split(".")[0], "L2_recomp"] = mse
+    table.loc[f.split(".")[0], "L2_recomp"] = mse ** 0.5
     table.loc[f.split(".")[0], "L1_recomp"] = mae
 
-    import pdb; pdb.set_trace()
+    print(table)
 import pdb; pdb.set_trace()
 table.to_csv("aggreg.csv", index=False)
 
