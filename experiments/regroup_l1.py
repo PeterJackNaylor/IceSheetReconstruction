@@ -30,7 +30,7 @@ for f in files:
     # model_hp.hidden_dim = model_hp.siren_hidden_dim
     # model_hp.hidden_num = model_hp.siren_hidden_num
     # model_hp.do_skip = model_hp.siren_skip
-    model_hp.normalise_targets = False
+    model_hp.normalise_targets = "normalise" in opt.name
     model_hp = inr.util_train.clean_hp(model_hp)
 
 
