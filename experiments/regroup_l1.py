@@ -5,18 +5,18 @@ import torch
 import inr_src as inr
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-gpu = False #torch.cuda.is_available()
+gpu = torch.cuda.is_available()
 device = "cuda" if gpu else "cpu"
 tdevice = torch.device(device)
 path_f = "../data/{}.npy"
 
 table = pd.DataFrame()
 files = glob("*.npz")
+idx = 0
 for f in files:
     npz = np.load(f)
     nv = npz["nv_target"]
     score = npz["best_score"] * nv[0,1]
-    table.loc[f.split(".")[0], "L2"] = score
 
     opt = inr.AttrDict()
     opt.name = f.split(".")[0]
@@ -26,27 +26,32 @@ for f in files:
     weights = f"{opt.name}.pth"
 
     model_hp = inr.AttrDict(npz)
+    model_hp.normalise_targets = "normalise" in opt.name
 
     # model_hp.hidden_dim = model_hp.siren_hidden_dim
     # model_hp.hidden_num = model_hp.siren_hidden_num
     # model_hp.do_skip = model_hp.siren_skip
-    model_hp.normalise_targets = "normalise" in opt.name
     model_hp = inr.util_train.clean_hp(model_hp)
 
-
+    method = model_hp.architecture
     model = inr.ReturnModel(
         model_hp.input_size,
         output_size=model_hp.output_size,
-        arch=model_hp.architecture,
+        arch=method,
         args=model_hp,
     )
+    if gpu:
+        model.cuda()
     # print(f"loading weight: {weights}")
     # print(f"Model_hp: {model_hp}")
     model.load_state_dict(torch.load(weights, map_location=tdevice))
     data_name = opt.name.replace(model_hp.architecture + "_", "")
     if model_hp.fourier:
+        method = "RFF"
         data_name = opt.name.replace("fourier" + "_", "")
+    normalised = "No"
     if model_hp.normalise_targets:
+        normalised = "Yes"
         data_name = data_name.replace("_normalise", "")
 
     temporal = model_hp.nv.shape[1] == 3
@@ -65,15 +70,28 @@ for f in files:
 
     prediction = inr.predict_loop(xytz_ds, 2048, model, device=device)
     model_hp.nv_target = np.array(model_hp.nv_target)
+    y_true = xytz_ds.targets
+    y_pred = prediction
+    if gpu:
+        y_true = y_true.cpu()
+        y_pred = y_pred.cpu()
+    mse = (mean_squared_error(y_true, y_pred) ** 0.5) * model_hp.nv_target[0,1]
+    mae = mean_absolute_error(y_true, y_pred) * model_hp.nv_target[0,1]
+    data_name = data_name.split("_")[0]
+    if data_name == "test":
+        data_name = "All"
+    table.loc[idx, "method"] = method
+    table.loc[idx, "normalised"] = normalised
+    table.loc[idx, "dataset"] = data_name
+    table.loc[idx, "L2"] = score
+    table.loc[idx, "L2_recomp"] = mse
+    table.loc[idx, "L1_recomp"] = mae
+    idx += 1
 
-    mse = mean_squared_error(xytz_ds.targets, prediction) * model_hp.nv_target[0,1]
-    mae = mean_absolute_error(xytz_ds.targets, prediction) * model_hp.nv_target[0,1]
-    table.loc[f.split(".")[0], "L2_recomp"] = mse ** 0.5
-    table.loc[f.split(".")[0], "L1_recomp"] = mae
-
-    print(table)
 import pdb; pdb.set_trace()
+pivot = pd.pivot_table(table, values='L1_recomp', index=['dataset', 'normalised'], columns=['method'], aggfunc=np.sum)
 table.to_csv("aggreg.csv", index=False)
+
 
 
 # Or if you prefer to load the model

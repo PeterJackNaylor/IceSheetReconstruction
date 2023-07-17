@@ -3,7 +3,7 @@
 dataset = Channel.from(params.dataset)
 monthly_dataset = Channel.from(params.monthly_dataset)
 datafolder = file(params.dataset_folder)
-dataset .map{tuple(it, "")} .concat( monthly_dataset .map{tuple(it, "--no-time")}) .set{ds}
+dataset .map{tuple(it, "--time")} .concat( monthly_dataset .map{tuple(it, "--no-time")}) .set{ds}
 method = Channel.from(params.method)
 option = Channel.from(params.normalise)
 
