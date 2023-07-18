@@ -2,9 +2,9 @@ configname: config.yaml
 epochs: 10
 trials: 5
 dataset_folder: ./data/
-dataset: [test_data] # data/Jan_data, data/Feb_data data/Mar_data
-monthly_dataset: [Jan_data, Feb_data, Mar_data]
-method: [fourier, siren, wires] # [--siren, --fourier, ""]
+dataset: [small_test_data] # data/Jan_data, data/Feb_data data/Mar_data
+monthly_dataset: []
+method: [siren] # [--siren, --fourier, ""]
 normalise: [normalise, ""]
 lr: #log search
   - 1.e-5 # min
