@@ -31,6 +31,12 @@ def parser_f():
     )
 
     parser.add_argument(
+        "--jobs",
+        default=1,
+        type=int,
+    )
+
+    parser.add_argument(
         "--fourier",
         action="store_true",
     )

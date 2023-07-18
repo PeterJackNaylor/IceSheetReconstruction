@@ -28,8 +28,7 @@ def main():
 
     obj = partial(objective, options)
 
-    study.optimize(obj, n_trials=options.p.trials)
-
+    study.optimize(obj, n_trials=options.p.trials,  n_jobs=options.p.n_jobs)
     # _, model_hp = train_best_model(options, best_params)
     print(f"best score: {study.best_value}")
     clean_up_path(options.name, study.best_trial, options.p.trials)
