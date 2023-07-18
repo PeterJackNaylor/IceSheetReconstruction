@@ -24,9 +24,9 @@ process INR {
     script:
         if (opt == "normalise"){
             opt = "_${opt}"
-            opt2 = "--normalise_targets ${opt_2}"
+            opt2 = "--normalise_targets"
         } else {
-            opt2 = "${opt_2}"
+            opt2 = ""
         }
         name = "${met}_${data}${opt}"
         """
@@ -34,7 +34,7 @@ process INR {
             --path ${datafolder}/${data}.npy \
             --name ${name} \
             --yaml_file ${config} \
-            --${met} --gpu  --time
+            --${met} --gpu  --time $opt2
         """
 }
 
