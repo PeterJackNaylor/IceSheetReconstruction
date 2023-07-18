@@ -1,7 +1,7 @@
 
 
 dataset = Channel.from(params.dataset)
-ds = file(params.dataset_folder)
+datafolder = file(params.dataset_folder)
 method = Channel.from(params.method)
 option = Channel.from(params.normalise)
 
@@ -13,7 +13,7 @@ process INR {
     publishDir "nf_meta/", overwrite: true
 
     input:
-        tuple val(data), val(opt_2)
+        tuple val(data)
         each met
         each opt
         
@@ -57,6 +57,6 @@ process group {
 
 workflow {
     main:
-        INR(ds, method, option)
+        INR(dataset, method, option)
         group(INR.output[1].collect())
 }
