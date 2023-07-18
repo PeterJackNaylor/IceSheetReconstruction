@@ -13,7 +13,7 @@ process INR {
     publishDir "nf_meta/", overwrite: true
 
     input:
-        tuple val(data)
+        val data
         each met
         each opt
         
