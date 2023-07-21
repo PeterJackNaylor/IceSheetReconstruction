@@ -9,18 +9,20 @@ def plot_scatter(pc_xy, pc_z, color_range, t, name, color, xrange=None, yrange=N
 
     if isoline:
         fig = go.Figure()
-        fig.add_trace(go.Contour(x=pc_xy[:,0],
+        fig.add_trace(go.Heatmap(x=pc_xy[:,0],
                                 y=pc_xy[:,1],
                                 z=pc_z,
-                                line_smoothing=1.3,
+                                #zsmooth='best',
+                                #line_smoothing=0.4,
                                 colorscale=color,
                                 colorbar=dict(
                                     title="Height (m)",),
-                                contours=dict(
-                                    start=color_range[0],
-                                    end=color_range[1],
-                                    size=200,
-                                ),))
+                                zauto=False, zmax=color_range[1], zmid=0, zmin=color_range[0],
+                                # contours=dict(
+                                #     start=color_range[0],
+                                #     end=color_range[1],
+                                # ),
+                                ))
         fig.update_layout(
             width=1000,
             height=1000,
@@ -35,7 +37,7 @@ def plot_scatter(pc_xy, pc_z, color_range, t, name, color, xrange=None, yrange=N
                 color_continuous_scale=color)
 
     fig.update_layout(
-        title=dict(text=f"Date: {f(t)}", font=dict(size=40), automargin=False, yref='paper'),
+        title=dict(text=f"Date: {t}", font=dict(size=40), automargin=False, yref='paper'),
         font_size=40,
         xaxis_title="Latitude",
         yaxis_title="Longitude",
