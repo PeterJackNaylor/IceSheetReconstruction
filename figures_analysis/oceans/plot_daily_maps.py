@@ -10,10 +10,13 @@ from tqdm import tqdm
 import xarray
 
 HOME = "/Users/peter.naylor/Library/CloudStorage/OneDrive-ESA/Documents/projects/ShapeReconstruction/IceSheet/2016_icemeasurements"
+HOME = "/home/pnaylor/IceSheetReconstruction"
 path = f"{HOME}/data/oceans_challenge.npy"
 name = "fourier_oceans_normalise"
 folder = f"{HOME}/../results_oceans_20_07_23"
+folder = f"{HOME}/nf_meta/"
 path_to_dc_ref = "/Users/peter.naylor/Downloads/dc_ref/NATL60-CJM165_GULFSTREAM_{}.1h_SSH.nc"
+path_to_dc_ref = "/home/pnaylor/dc_ref/NATL60-CJM165_GULFSTREAM_{}.1h_SSH.nc"
 # y2012m10d01
 path_DUACS = f"{HOME}/data/ocean/2020a_SSH_mapping_NATL60_DUACS_en_j1_tpn_g2.nc"
 xf_DUACS = xarray.open_dataset(path_DUACS).sel(lon=slice(-65,-55),lat=slice(33,43))
