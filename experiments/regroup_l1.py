@@ -54,7 +54,7 @@ for f in files:
         normalised = "Yes"
         data_name = data_name.replace("_normalise", "")
 
-    temporal = model_hp.nv.shape[1] == 3
+    temporal = model_hp.nv.shape[0] == 3
     xytz_ds = inr.XYTZ(
             path_f.format(data_name),
             train_fold=False,
@@ -88,12 +88,14 @@ for f in files:
     table.loc[idx, "L1_recomp"] = mae
     idx += 1
 
-import pdb; pdb.set_trace()
 pivot = pd.pivot_table(table, values='L1_recomp', index=['dataset', 'normalised'], columns=['method'], aggfunc=np.sum)
-table.to_csv("aggreg.csv", index=False)
+pivot.to_csv("aggreg_L1.csv", index=False)
+
+pivot2 = pd.pivot_table(table, values='L2_recomp', index=['dataset', 'normalised'], columns=['method'], aggfunc=np.sum)
+pivot2.to_csv("aggreg_L2.csv", index=False)
 
 
-
+pivot2test = pd.pivot_table(table, values='L2', index=['dataset', 'normalised'], columns=['method'], aggfunc=np.sum)
+pivot2test.to_csv("aggreg_L2_testset.csv", index=False)
+import pdb; pdb.set_trace()
 # Or if you prefer to load the model
-
-

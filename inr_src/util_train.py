@@ -5,6 +5,7 @@ from tqdm import tqdm, trange
 import optuna
 # from torchlars import LARS
 from .LARC import LARC
+from .diff_operators import jacobian, gradient, divergence
 # from tqdm.notebook import tqdm
 import time
 # I added the time so that if gpu not one, and an epoch is more than 30 mins, cut! ^^
@@ -65,6 +66,41 @@ class EarlyStopper:
                 return True
         return False
 
+def compute_hook(p, s):
+    grad = gradient(p, s)
+    laplace = gradient(grad, s)
+    diff_grad = grad[:,1] - grad[:,0]
+    laplace_sum = laplace[:,0] + laplace[:,1]
+    return diff_grad, laplace_sum
+
+def inference(sample, model):
+    sample.requires_grad = True
+    pred = model(sample)
+    diff_grad, laplace_sum = compute_hook(pred, sample)
+    return pred.detach(), diff_grad.detach(), laplace_sum.detach()
+
+def predict_loop_with_gradient(dataset, bs, model, device="cpu", verbose=True):
+    n_data = len(dataset)
+    batch_idx = torch.arange(0, n_data, dtype=int, device=device)
+    range_ = range(0, n_data, bs)
+    train_iterator = tqdm(range_) if verbose else range_
+
+    preds = []
+    diff_grads = []
+    laplace_sums = []
+    if True:
+    # with torch.no_grad():
+        for i in train_iterator:
+            idx = batch_idx[i : (i + bs)]
+            pred, diff_grad, laplace_sum = inference(dataset.samples[idx], model)
+            preds.append(pred)
+            laplace_sums.append(laplace_sum)
+            diff_grads.append(diff_grad)
+    preds = torch.cat(preds)
+    diff_grads = torch.cat(diff_grads)
+    laplace_sums = torch.cat(laplace_sums)
+    return preds, diff_grads, laplace_sums
+
 
 def predict_loop(dataset, bs, model, device="cpu", verbose=True):
     n_data = len(dataset)
@@ -109,14 +145,14 @@ def continuous_diff(x, model):
     # y in [N,nvarout]
     y = model(x)
     # dy in [N,nvarout]
-    dz_dxy = torch.autograd.grad(
+    dz_dxyt = torch.autograd.grad(
         y,
         x,
         torch.ones_like(y),
         create_graph=True,
     )[0]
 
-    return dz_dxy
+    return dz_dxyt
 
 
 def estimate_density(

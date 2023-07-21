@@ -21,7 +21,7 @@ mapping_size: # power of 2 search
   - 11 # max
 lambda_range: #log search # For both xy and t
   - 1.e-5 # min
-  - 1.e+1 # max
+  - 1.e+3 # max
 hidden_num: # log search for SIREN and WIRES
   - 4
   - 8
