@@ -143,6 +143,6 @@ for i, t in enumerate(date_range, total=len(date_range)):#
     date_DUAC =  t.strftime('%Y-%m-%d')
     if date_DUAC != prev_date:
         prev_date = date_DUAC
-        plot_scatter(grid_xy_dc_ref, dcref_z[:,i], z_range, date_DUAC, f"daily_outputs/DUAC/{date_DUAC}.png", 
+        plot_scatter(grid_xy_dc_ref, imgs_DUAC[:,i], z_range, date_DUAC, f"daily_outputs/DUAC/{date_DUAC}.png", 
                             px.colors.diverging.BrBG,
                             xrange=xrange, yrange=yrange, isoline=True)

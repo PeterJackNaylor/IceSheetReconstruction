@@ -42,8 +42,8 @@ def add_config_optuna_to_opt(opt, trial):
 
     model_hp.lambda_t = trial.suggest_float(
             "lambda_t",
-            opt.p.lambda_range[0],
-            opt.p.lambda_range[1],
+            opt.p.lambda_range_t[0],
+            opt.p.lambda_range_t[1],
             log=True,
         )
     model_hp.lambda_l1 = trial.suggest_float(
