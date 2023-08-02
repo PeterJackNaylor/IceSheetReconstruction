@@ -11,8 +11,8 @@ import xarray
 
 HOME = "/Users/peter.naylor/Library/CloudStorage/OneDrive-ESA/Documents/projects/ShapeReconstruction/IceSheet/2016_icemeasurements"
 HOME = "/home/pnaylor/IceSheetReconstruction"
-path = f"{HOME}/data/oceans_challenge.npy"
-name = "fourier_oceans_normalise"
+path = f"{HOME}/data/oceans.npy"
+name = "siren_oceans_normalise" #"fourier_oceans_normalise"
 folder = f"{HOME}/../results_oceans_20_07_23"
 folder = f"{HOME}/nf_meta/"
 path_to_dc_ref = "/Users/peter.naylor/Downloads/dc_ref/NATL60-CJM165_GULFSTREAM_{}.1h_SSH.nc"
@@ -122,27 +122,27 @@ z_range = [mini, maxi]
 grad_range = [grad_y_minus_x.min(), grad_y_minus_x.max()]
 laplacian_range = [grad_laplacian.min(), grad_laplacian.max()]
 prev_date = None
-for i, t in enumerate(date_range, total=len(date_range)):#
+for i, t in tqdm(enumerate(date_range), total=len(date_range)):#
     t_npy = np.datetime64(pd.to_datetime(t)).astype(int)
     date = t.strftime('%Y-%m-%d %Hh%Mm%Ss')
-    plot_scatter(grid_xy, imgs[:,i], z_range, date, f"daily_outputs/proposed/{date}.png", 
+    plot_scatter(grid_xy, imgs[:,i], z_range, date, f"daily_outputs_siren/proposed/{date}.png", 
                         px.colors.diverging.BrBG,
                         xrange=xrange, yrange=yrange, isoline=True)
-    plot_scatter(grid_xy, grad_y_minus_x[:,i], grad_range, date, f"daily_outputs/gradient_diff/{date}.png", 
+    plot_scatter(grid_xy, grad_y_minus_x[:,i], grad_range, date, f"daily_outputs_siren/gradient_diff/{date}.png", 
                         px.colors.diverging.Spectral,
                         xrange=xrange, yrange=yrange, isoline=True)
-    plot_scatter(grid_xy, grad_laplacian[:,i], laplacian_range, date, f"daily_outputs/laplacian/{date}.png", 
+    plot_scatter(grid_xy, grad_laplacian[:,i], laplacian_range, date, f"daily_outputs_siren/laplacian/{date}.png", 
                         px.colors.diverging.Spectral,
                         xrange=xrange, yrange=yrange, isoline=True)
-    plot_scatter(grid_xy_dc_ref, dcref_z[:,i], z_range, date, f"daily_outputs/dcref/{date}.png", 
-                        px.colors.diverging.BrBG,
-                        xrange=xrange, yrange=yrange, isoline=True)
+    #plot_scatter(grid_xy_dc_ref, dcref_z[:,i], z_range, date, f"daily_outputs/dcref/{date}.png", 
+    #                    px.colors.diverging.BrBG,
+    #                    xrange=xrange, yrange=yrange, isoline=True)
     
 
 
-    date_DUAC =  t.strftime('%Y-%m-%d')
-    if date_DUAC != prev_date:
-        prev_date = date_DUAC
-        plot_scatter(grid_xy_dc_ref, dcref_z[:,i], z_range, date_DUAC, f"daily_outputs/DUAC/{date_DUAC}.png", 
-                            px.colors.diverging.BrBG,
-                            xrange=xrange, yrange=yrange, isoline=True)
+    #date_DUAC =  t.strftime('%Y-%m-%d')
+    #if date_DUAC != prev_date:
+    #    prev_date = date_DUAC
+    #    plot_scatter(grid_xy_dc_ref, dcref_z[:,i], z_range, date_DUAC, f"daily_outputs/DUAC/{date_DUAC}.png", 
+    #                        px.colors.diverging.BrBG,
+    #                        xrange=xrange, yrange=yrange, isoline=True)
