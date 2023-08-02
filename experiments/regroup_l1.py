@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 gpu = torch.cuda.is_available()
 device = "cuda" if gpu else "cpu"
 tdevice = torch.device(device)
-path_f = "../data/{}.npy"
+path_f = "../../data/{}.npy"
 
 table = pd.DataFrame()
 files = glob("*.npz")

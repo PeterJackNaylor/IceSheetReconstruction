@@ -26,6 +26,12 @@ def parser_f():
     )
 
     parser.add_argument(
+        "--coherence_path",
+        type=str,
+        default=None,
+    )
+
+    parser.add_argument(
         "--output_dim",
         type=int,
     )

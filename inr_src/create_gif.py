@@ -7,11 +7,12 @@ def stich(date, l, path):
     images = [Image.open(os.path.join(path, x).format(date)) for x in l]
     widths, heights = zip(*(i.size for i in images))
 
-    total_width = sum(widths) // 2
-    total_height = sum(heights) // 2
-    new_im = Image.new('RGB', (total_width, total_height))
+    img_width = sum(widths) // 5
+    img_height = sum(heights) // 5
+
+    new_im = Image.new('RGB', (img_width * 2, img_height * 3))
     size = images[0].size[0]
-    positions = [(0,0), (size,0), (0,size), (size, size)]
+    positions = [(0,0), (img_width,0), (0,img_height), (img_width, img_height), (img_width//2, img_height * 2)]
     for i, im in enumerate(images):
         new_im.paste(im, positions[i])
     return new_im
