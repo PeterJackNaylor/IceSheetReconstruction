@@ -10,13 +10,13 @@ from tqdm import tqdm
 import xarray
 
 HOME = "/Users/peter.naylor/Library/CloudStorage/OneDrive-ESA/Documents/projects/ShapeReconstruction/IceSheet/2016_icemeasurements"
-HOME = "/home/pnaylor/IceSheetReconstruction"
+#HOME = "/home/pnaylor/IceSheetReconstruction"
 path = f"{HOME}/data/oceans_challenge.npy"
 name = "fourier_oceans_normalise"
 folder = f"{HOME}/../results_oceans_20_07_23"
-folder = f"{HOME}/nf_meta/"
+#folder = f"{HOME}/nf_meta/"
 path_to_dc_ref = "/Users/peter.naylor/Downloads/dc_ref/NATL60-CJM165_GULFSTREAM_{}.1h_SSH.nc"
-path_to_dc_ref = "/home/pnaylor/dc_ref/NATL60-CJM165_GULFSTREAM_{}.1h_SSH.nc"
+#path_to_dc_ref = "/home/pnaylor/dc_ref/NATL60-CJM165_GULFSTREAM_{}.1h_SSH.nc"
 # y2012m10d01
 path_DUACS = f"{HOME}/data/ocean/2020a_SSH_mapping_NATL60_DUACS_en_j1_tpn_g2.nc"
 xf_DUACS = xarray.open_dataset(path_DUACS).sel(lon=slice(-65,-55),lat=slice(33,43))
@@ -72,7 +72,7 @@ def scale(x):
 # print(f"RMSE: {scale(mse_norm):.5f} MAE: {scale(mae_norm):.5f} Size: {prediction.shape[0]}")
 
 XYT_xy = xytz_ds.samples.cpu() * model_hp.nv[:,1] + model_hp.nv[:,0]
-dataset_t = inr.XYTZ_grid(XYT_xy, 0, nv=model_hp.nv, step_grid=0.02, gpu=gpu, temporal=model_hp.nv.shape[0] == 3)
+dataset_t = inr.XYTZ_grid(XYT_xy, 0, nv=model_hp.nv, step_grid=0.1, gpu=gpu, temporal=model_hp.nv.shape[0] == 3)
 grid_xy = (dataset_t.samples.cpu() * model_hp.nv[:,1] + model_hp.nv[:,0]).numpy()
 
 times = XYT_xy[:, -1]
@@ -80,6 +80,7 @@ start_date = pd.to_datetime(times.min() * 1000).replace(hour=1, minute=30, secon
 
 end_date = pd.to_datetime(times.max() * 1000).replace(hour=1, minute=30, second=0, microsecond=0)
 date_range = pd.date_range(start=start_date, end=end_date, freq='1D')#freq='12H') #
+date_range = date_range[np.array([4,-4])]
 
 imgs = np.zeros((grid_xy.shape[0], date_range.shape[0]))
 grad_y_minus_x = np.zeros((grid_xy.shape[0], date_range.shape[0]))
@@ -113,6 +114,7 @@ for i, t in tqdm(enumerate(date_range),  total=len(date_range)):#
 
     imgs_DUAC[:,i] = xf_DUACS.sel(time=t.strftime('%Y-%m-%d')).to_dataframe().gssh.values
 
+import pdb; pdb.set_trace()
 maxi = np.max([imgs.max(), dcref_z.max(), imgs_DUAC.max()])
 mini = np.min([imgs.min(), dcref_z.min(), imgs_DUAC.min()])
 xrange = [grid_xy[:,0].min(), grid_xy[:,0].max()]
@@ -122,10 +124,10 @@ z_range = [mini, maxi]
 grad_range = [grad_y_minus_x.min(), grad_y_minus_x.max()]
 laplacian_range = [grad_laplacian.min(), grad_laplacian.max()]
 prev_date = None
-for i, t in enumerate(date_range, total=len(date_range)):#
+for i, t in tqdm(enumerate(date_range), total=len(date_range)):#
     t_npy = np.datetime64(pd.to_datetime(t)).astype(int)
     date = t.strftime('%Y-%m-%d %Hh%Mm%Ss')
-    plot_scatter(grid_xy, imgs[:,i], z_range, date, f"daily_outputs/proposed/{date}.png", 
+    plot_scatter(grid_xy, imgs[:,i], z_range, date, f"daily_outputs/proposed_new/{date}.png", 
                         px.colors.diverging.BrBG,
                         xrange=xrange, yrange=yrange, isoline=True)
     plot_scatter(grid_xy, grad_y_minus_x[:,i], grad_range, date, f"daily_outputs/gradient_diff/{date}.png", 

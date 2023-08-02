@@ -26,6 +26,7 @@ class XYTZ(Dataset):
         nv_targets=None,
         normalise_targets=True,
         temporal=True,
+        coherence_path=None,
         gpu=False
     ):
         self.need_target = not pred_type == "grid"
@@ -34,6 +35,9 @@ class XYTZ(Dataset):
         self.step_grid = step_grid
 
         pc = np.load(path)
+        self.weights = None
+        if coherence_path is not None:
+            self.weights = np.load(coherence_path)
 
         if pred_type == "pc":
             samples, targets = self.setup_data(pc)
@@ -118,9 +122,13 @@ class XYTZ(Dataset):
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
+        
         if not self.need_target:
             return sample
         target = self.targets[idx]
+        if self.weights is not None:
+            weights = self.weights[idx]
+            return sample, weights, target
         return sample, target
 
 
@@ -156,6 +164,7 @@ def return_dataset_prediction(
 
 def return_dataset(
     path,
+    coherence=None,
     normalise_targets=True,
     temporal=True,
     gpu=False
@@ -170,6 +179,7 @@ def return_dataset(
         nv=None,
         normalise_targets=normalise_targets,
         temporal=temporal,
+        coherence_path=coherence,
         gpu=gpu
     )
     nv = xytz_train.nv_samples

@@ -166,6 +166,7 @@ def estimate_density(
     temporal=True,
     gpu=False,
     clip_gradients=True,
+    weights=False
 ):
     device = "cuda" if gpu else "cpu"
     outname = outname + ".pth"
@@ -219,6 +220,9 @@ def estimate_density(
             if True:
             #with torch.cuda.amp.autocast():
                 target_pred = model(dataset.samples[idx])
+                if weights:
+                    sample_weights = dataset.weights[idx]
+                    import pdb; pdb.set_trace()
                 lmse = loss_fn_l2(target_pred, dataset.targets[idx])
                 lmae = loss_fn_l1(target_pred, dataset.targets[idx])
                 loss = lmse + lambda_l1 * lmae
