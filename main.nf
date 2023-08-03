@@ -35,14 +35,14 @@ process INR {
         if (add_coherence){
             opt_coherence = " --coherence_path ${datafolder}/${data.replace('data', 'coherence')}.npy"
         }else{
-
+            opt_coherence = ""
         }
         """
         python ${pyfile} \
             --path ${datafolder}/${data}.npy \
             --name ${name} \
             --yaml_file ${config} \
-            --${met} --gpu ${opt2}
+            --${met} --gpu ${opt2} ${opt_coherence}
         """
 }
 
