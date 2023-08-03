@@ -7,12 +7,11 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
 
     train, test, nv, nv_target = return_dataset(
         opt.path,
-        coherence=opt.coherence,
+        coherence=opt.coherence_path,
         normalise_targets=opt.normalise_targets,
         temporal=opt.temporal,
         gpu=gpu
     )
-    
     model_hp.input_size = train.input_size
     model_hp.output_size = len(nv_target)
     model_hp.nv = nv
@@ -36,12 +35,14 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     if gpu:
         model = model.cuda()
 
+    weights = opt.coherence_path is not None
     outputs = estimate_density(
         train,
         test,
         model,
         model_hp,
         opt.tmp_name,
+        weights=weights,
         trial=trial,
         return_model=return_model,
         temporal=opt.temporal,
