@@ -36,7 +36,8 @@ class XYTZ(Dataset):
 
         pc = np.load(path)
         self.weights = None
-        if coherence_path is not None:
+        self.need_weights = coherence_path is not None
+        if self.need_weights:
             self.weights = np.load(coherence_path)
 
         if pred_type == "pc":
@@ -75,6 +76,8 @@ class XYTZ(Dataset):
         self.samples = self.samples.to("cuda")
         if self.need_target:
             self.targets = self.targets.to("cuda")
+        if self.need_weights:
+            self.weights = self.weights.to("cuda")
 
 
 
