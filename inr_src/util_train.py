@@ -35,7 +35,7 @@ class L1Loss(nn.Module):
         self.mae = nn.L1Loss()
         
     def forward(self, yhat, y, weights):
-        loss = 
+        loss = self.mae(yhat, y)
         return loss
 
 class L1LossW(nn.Module):
