@@ -251,7 +251,7 @@ def estimate_density(
                     sample_weights = dataset.weights[idx]
                 lmse = loss_fn_l2(target_pred, dataset.targets[idx], sample_weights)
                 lmae = loss_fn_l1(target_pred, dataset.targets[idx], sample_weights)
-                import pdb; pdb.set_trace()
+
                 loss = lmse + lambda_l1 * lmae
                 if grad:
                     ind = torch.randint(
