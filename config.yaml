@@ -5,7 +5,7 @@ n_jobs: 1
 dataset_folder: ./data/
 dataset: [test_data] # data/Jan_data, data/Feb_data data/Mar_data
 monthly_dataset: [Jan_data, Feb_data, Mar_data]
-corehence: On # Off
+coherence: On # Off
 method: [fourier, siren] # wires
 normalise: [normalise] # ""
 lr: #log search
