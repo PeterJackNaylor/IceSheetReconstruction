@@ -34,7 +34,7 @@ class L1Loss(nn.Module):
         super().__init__()
         self.mae = nn.L1Loss()
         
-    def forward(self, yhat, y, weights):
+    def forward(self, yhat, y, weights=None):
         loss = self.mae(yhat, y)
         return loss
 
@@ -294,7 +294,7 @@ def estimate_density(
                 dataset_test,
                 model,
                 opt.bs,
-                loss_fn_l2,
+                RMSELoss(),
                 opt.verbose,
                 device=device,
             )
