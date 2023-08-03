@@ -16,8 +16,34 @@ class RMSELoss(nn.Module):
         self.mse = nn.MSELoss()
         self.eps = eps
         
-    def forward(self,yhat,y):
+    def forward(self, yhat, y, weight=None):
         loss = torch.sqrt(self.mse(yhat,y) + self.eps)
+        return loss
+
+class RMSELossW(nn.Module):
+    def __init__(self, eps=1e-6):
+        super().__init__()
+        self.eps = eps
+        
+    def forward(self, yhat, y, weights):
+        loss = torch.sqrt((weights * (yhat - y) **2 ).mean()  + self.eps)
+        return loss
+
+class L1Loss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mae = nn.L1Loss()
+        
+    def forward(self, yhat, y, weights):
+        loss = 
+        return loss
+
+class L1LossW(nn.Module):
+    def __init__(self):
+        super().__init__()
+        
+    def forward(self, yhat, y, weights):
+        loss = (weights * torch.abs(yhat - y)).mean()
         return loss
 
 def clean_hp(d, gpu=False):
@@ -185,8 +211,8 @@ def estimate_density(
     grad = not(lambda_t == lambda_xy == 0)
 
     loss_fn_t = RMSELoss() #mseloss
-    loss_fn_l2 = RMSELoss()
-    loss_fn_l1 = nn.L1Loss()
+    loss_fn_l2 = RMSELossW() if weights else RMSELoss()
+    loss_fn_l1 = L1LossW() if weights else L1Loss()
     loss_tvn = RMSELoss() #or mseloss
     # loss = loss_fn_l2 + lambda_l1 * loss_fn_l1
     s = 3 if temporal else 2
@@ -220,11 +246,12 @@ def estimate_density(
             if True:
             #with torch.cuda.amp.autocast():
                 target_pred = model(dataset.samples[idx])
+                sample_weights = None
                 if weights:
                     sample_weights = dataset.weights[idx]
-                    import pdb; pdb.set_trace()
-                lmse = loss_fn_l2(target_pred, dataset.targets[idx])
-                lmae = loss_fn_l1(target_pred, dataset.targets[idx])
+                lmse = loss_fn_l2(target_pred, dataset.targets[idx], sample_weights)
+                lmae = loss_fn_l1(target_pred, dataset.targets[idx], sample_weights)
+                import pdb; pdb.set_trace()
                 loss = lmse + lambda_l1 * lmae
                 if grad:
                     ind = torch.randint(
