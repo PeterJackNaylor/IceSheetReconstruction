@@ -6,7 +6,6 @@ datafolder = file(params.dataset_folder)
 dataset .map{tuple(it, "--time")} .concat( monthly_dataset .map{tuple(it, "--no-time")}) .set{ds}
 method = Channel.from(params.method)
 option = Channel.from(params.normalise)
-add_coherence = params.coherence == "On"
 
 config = file(params.configname)
 pyfile = file("experiments/run.py")
@@ -32,7 +31,7 @@ process INR {
             opt2 = "${opt_2}"
         }
         name = "${met}_${data}${opt}"
-        if (add_coherence){
+        if (params.coherence){
             opt_coherence = " --coherence_path ${datafolder}/${data.replace('data', 'coherence')}.npy"
         }else{
             opt_coherence = ""
