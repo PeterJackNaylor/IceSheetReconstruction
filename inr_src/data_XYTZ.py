@@ -35,10 +35,10 @@ class XYTZ(Dataset):
         self.step_grid = step_grid
 
         pc = np.load(path)
-        self.weights = None
+
         self.need_weights = coherence_path is not None
         if self.need_weights:
-            self.weights = np.load(coherence_path)
+            weights = np.load(coherence_path)
 
         if pred_type == "pc":
             samples, targets = self.setup_data(pc)
@@ -47,6 +47,8 @@ class XYTZ(Dataset):
             if not temporal:
                 samples = samples[:, 0:2]
             targets = targets[idx]
+            if self.need_weights:
+                weights = weights[idx]
 
         elif pred_type == "grid":
             samples = self.setup_uniform_grid(pc, time)
@@ -63,6 +65,8 @@ class XYTZ(Dataset):
 
         if self.need_target:
             self.targets = torch.tensor(targets)
+        if self.need_weights:
+            self.weights = torch.tensor(weights)
         if gpu:
             self.send_cuda()
 
