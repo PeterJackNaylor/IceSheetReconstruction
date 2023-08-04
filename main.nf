@@ -36,7 +36,7 @@ process INR {
         }else{
             opt_coherence = ""
         }
-        if (params.swath_id){
+        if (params.swath){
             opt_swath = " --swath_path ${datafolder}/${data.replace('data', 'swath')}.npy"
         }else{
             opt_swath = ""

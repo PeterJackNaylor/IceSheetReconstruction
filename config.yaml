@@ -6,7 +6,7 @@ dataset_folder: ./data/
 dataset: [test_data] # data/Jan_data, data/Feb_data data/Mar_data
 monthly_dataset: [Jan_data, Feb_data, Mar_data]
 coherence: On # Off
-swath_validation: On # Off
+swath: On # Off
 method: [fourier, siren] # wires
 normalise: [normalise] # ""
 lr: #log search
