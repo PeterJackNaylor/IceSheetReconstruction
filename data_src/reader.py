@@ -3,10 +3,11 @@ import numpy as np
 from glob import glob
 from tqdm import tqdm
 
-def get_dataset_from_xarray(path):
+def get_dataset_from_xarray(path, swath_id=0):
     xa = xarray.open_dataset(path)
     df = xa.to_dataframe()
-    df = df[["Lat", "Lon", "Height", "Time", "Coherence"]]
+    df["Swath"] = swath_id
+    df = df[["Lat", "Lon", "Height", "Time", "Swath", "Coherence"]]
     df.Time = df.Time.dt.total_seconds().astype(int)
     df = df[df.index.get_level_values('d2') == 0]
     df = df.reset_index(drop=True)
@@ -14,15 +15,18 @@ def get_dataset_from_xarray(path):
 
 def one_single_file():
     files = glob("../data/*/*Baseline_E_Swath.nc")
-
+    id_= 0
     list_arrays = []
     for f in tqdm(files):
-        array = get_dataset_from_xarray(f)
+        array = get_dataset_from_xarray(f, swath_id=id_)
         list_arrays.append(array)
+        id_ += 1
     full_data = np.concatenate(list_arrays, axis=0)
+    swath_id = full_data[:, -2]
     coherence = full_data[:, -1]
     np.save("coherence.npy", coherence)
-    np.save("test_data.npy", full_data[:, :-1])
+    np.save("swath_id.npy", swath_id)
+    np.save("test_data.npy", full_data[:, :-2])
 
 def monthly_file():
     for numb, name in [("01", "Jan"), ("02", "Feb"), ("03", "Mar")]:
@@ -56,4 +60,4 @@ def small_one_single_file():
 
 
 if __name__ == "__main__":
-    small_one_single_file()
+    one_single_file()

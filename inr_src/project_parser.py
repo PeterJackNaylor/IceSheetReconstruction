@@ -32,6 +32,12 @@ def parser_f():
     )
 
     parser.add_argument(
+        "--swath_path",
+        type=str,
+        default=None,
+    )
+
+    parser.add_argument(
         "--output_dim",
         type=int,
     )

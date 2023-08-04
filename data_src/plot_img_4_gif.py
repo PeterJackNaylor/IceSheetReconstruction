@@ -20,7 +20,7 @@ tdevice = torch.device(device)
 opt = inr.AttrDict()
 opt.name = "siren_test_data_normalise"#"fourier_test_data"#
 # model meta data
-folder = "../nf_meta/lambda_t_1e-2"
+folder = "../nf_meta/lambda_t_1e-1"
 npz = np.load(f"{folder}/{opt.name}.npz")
 weights = f"{folder}/{opt.name}.pth"
 model_hp = inr.AttrDict(npz)
@@ -28,7 +28,7 @@ model_hp = inr.util_train.clean_hp(model_hp)
 # data path
 path = "../data/test_data.npy"
 path_coherence = "../data/coherence.npy"
-mask_path = "./ocean_mask.png"
+mask_path = "./ice_mask.png"
 mask = io.imread(mask_path)[::-1]
 
 # load data
@@ -70,7 +70,7 @@ model.load_state_dict(torch.load(weights, map_location=tdevice))
 
 
 
-folder_res = "../gif/results_lambda_min_1e-2_siren"
+folder_res = "../gif/results_lambda_min_1e-1_siren"
 xrange = [XYT_xy[:,0].numpy().min(), XYT_xy[:,0].numpy().max()]
 yrange = [XYT_xy[:,1].numpy().min(), XYT_xy[:,1].numpy().max()]
 
@@ -98,10 +98,11 @@ grid = dataset_t
 for t in date_range:#
     t_int = t.value / 1e9
     dataset_t.samples[:,-1] = (t_int - model_hp.nv[-1,0]) / model_hp.nv[-1,1]
-    prediction = inr.predict_loop(dataset_t, 2048, model, device=device)
-
+    # prediction = inr.predict_loop(dataset_t, 2048, model, device=device)
+    prediction, gradient = inr.predict_loop_with_time_gradient(dataset_t, 2048, model, device=device)
     prediction = prediction * model_hp.nv_target[0,1] + model_hp.nv_target[0,0]
     prediction_mask = prediction.numpy()[:,0] * mask_ravel
+    gradient_mask = gradient.numpy() * mask_ravel
     date = t.strftime('%Y-%m-%d')
     fig = plot_scatter(grid_xy, prediction_mask, 
                 [100, 1700],
@@ -111,6 +112,13 @@ for t in date_range:#
 
     fig.write_image(f"{folder_res}/heatmaps/{date}.png")
 
+    fig_gradient = plot_scatter(grid_xy, gradient_mask, 
+                [-1, 1],
+                px.colors.diverging.RdBu,
+                xrange=xrange, yrange=yrange, heatmap=True)
+    fig_gradient.update_layout(title_text=f"{date}")
+
+    fig_gradient.write_image(f"{folder_res}/gradient/{date}.png")
 q33 = np.quantile(xytz_ds.samples[:,2], 0.33)
 idx = xytz_ds.samples[:,2] < q33
 xytz_ds.samples = xytz_ds.samples[idx]
