@@ -5,7 +5,7 @@ import pandas as pd
 from torch.utils.data import Dataset
 
 def split_train(n, seed, train_fraction, train, swath_path=None):
-    if swath_id is not None:
+    if swath_path is not None:
         swath_id = np.load(swath_path)
         n_swath = swath_id.max()
         id_swath = list(range(n_swath))
