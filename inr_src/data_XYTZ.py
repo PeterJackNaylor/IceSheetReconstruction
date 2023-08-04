@@ -8,8 +8,7 @@ def split_train(n, seed, train_fraction, train, swath_path=None):
     if swath_path is not None:
         swath_id = np.load(swath_path)
         n_swath = swath_id.max()
-        import pdb; pdb.set_trace()
-        id_swath = list(range(n_swath))
+        id_swath = list(range(int(n_swath)))
         last_id = int(n_swath * train_fraction)
         swath_idx = id_swath[:last_id] if train else id_swath[last_id:]
         idx = np.where(np.isin(swath_id, swath_idx))
