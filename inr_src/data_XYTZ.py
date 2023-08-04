@@ -214,7 +214,6 @@ def return_dataset(
         swath_path=swath,
         gpu=gpu
     )
-    import pdb; pdb.set_trace()
     return xytz_train, xytz_test, nv, nv_targets
 
 def main():
