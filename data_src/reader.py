@@ -58,7 +58,7 @@ def small_one_single_file():
     np.save("small_coherence.npy", coherence)
     np.save("small_test_data.npy", full_data[:, :-1])
 
-def withandreas():
+def PetermannGlacier():
     files = glob("/Users/peter.naylor/Downloads/wetransfer_data_2023-08-02_1137/*/*/*.nc")
     id_= 0
     list_arrays = []
@@ -75,4 +75,4 @@ def withandreas():
     import pdb; pdb.set_trace()
 
 if __name__ == "__main__":
-    withandreas()
+    PetermannGlacier()
