@@ -8,6 +8,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     train, test, nv, nv_target = return_dataset(
         opt.path,
         coherence=opt.coherence_path,
+        swath=opt.swath_path,
         normalise_targets=opt.normalise_targets,
         temporal=opt.temporal,
         gpu=gpu

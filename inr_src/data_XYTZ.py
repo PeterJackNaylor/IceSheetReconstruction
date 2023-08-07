@@ -4,13 +4,23 @@ import pandas as pd
 
 from torch.utils.data import Dataset
 
-def split_train(n, seed, train_fraction, train):
-    idx = np.arange(n)
-    np.random.seed(seed)
-    if train_fraction != 0.0 and train_fraction != 1.0:
-        np.random.shuffle(idx)
-    n0 = int(n * train_fraction)
-    idx = idx[:n0] if train else idx[n0:]
+def split_train(n, seed, train_fraction, train, swath_path=None):
+    if swath_path is not None:
+        swath_id = np.load(swath_path)
+        n_swath = swath_id.max()
+        id_swath = list(range(int(n_swath)))
+        last_id = int(n_swath * train_fraction)
+        if train_fraction != 0.0 and train_fraction != 1.0:
+            np.random.shuffle(swath_idx)
+        swath_idx = id_swath[:last_id] if train else id_swath[last_id:]
+        idx = np.where(np.isin(swath_id, swath_idx))[0]
+    else:
+        idx = np.arange(n)
+        np.random.seed(seed)
+        if train_fraction != 0.0 and train_fraction != 1.0:
+            np.random.shuffle(idx)
+        n0 = int(n * train_fraction)
+        idx = idx[:n0] if train else idx[n0:]
     return idx 
 
 class XYTZ(Dataset):
@@ -27,6 +37,7 @@ class XYTZ(Dataset):
         normalise_targets=True,
         temporal=True,
         coherence_path=None,
+        swath_path=None,
         gpu=False
     ):
         self.need_target = not pred_type == "grid"
@@ -42,7 +53,7 @@ class XYTZ(Dataset):
 
         if pred_type == "pc":
             samples, targets = self.setup_data(pc)
-            idx = split_train(samples.shape[0], seed, train_fraction, train_fold)
+            idx = split_train(samples.shape[0], seed, train_fraction, train_fold, swath_path=swath_path)
             samples = samples[idx]
             if not temporal:
                 samples = samples[:, 0:2]
@@ -172,6 +183,7 @@ def return_dataset_prediction(
 def return_dataset(
     path,
     coherence=None,
+    swath=None,
     normalise_targets=True,
     temporal=True,
     gpu=False
@@ -187,6 +199,7 @@ def return_dataset(
         normalise_targets=normalise_targets,
         temporal=temporal,
         coherence_path=coherence,
+        swath_path=swath,
         gpu=gpu
     )
     nv = xytz_train.nv_samples
@@ -200,9 +213,9 @@ def return_dataset(
         nv=nv,
         nv_targets=nv_targets,
         temporal=temporal,
+        swath_path=swath,
         gpu=gpu
     )
-
     return xytz_train, xytz_test, nv, nv_targets
 
 def main():

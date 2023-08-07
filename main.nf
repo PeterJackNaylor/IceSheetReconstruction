@@ -36,12 +36,17 @@ process INR {
         }else{
             opt_coherence = ""
         }
+        if (params.swath){
+            opt_swath = " --swath_path ${datafolder}/${data.replace('data', 'swath')}.npy"
+        }else{
+            opt_swath = ""
+        }
         """
         python ${pyfile} \
             --path ${datafolder}/${data}.npy \
             --name ${name} \
             --yaml_file ${config} \
-            --${met} --gpu ${opt2} ${opt_coherence}
+            --${met} --gpu ${opt2} ${opt_coherence} ${opt_swath}
         """
 }
 

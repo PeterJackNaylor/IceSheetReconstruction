@@ -105,6 +105,18 @@ def inference(sample, model):
     diff_grad, laplace_sum = compute_hook(pred, sample)
     return pred.detach(), diff_grad.detach(), laplace_sum.detach()
 
+def infere_time_gradient(sample, model):
+    # sample.requires_grad = True
+    x = sample[:,0]
+    y = sample[:,1]
+    t = sample[:,2]
+    x.requires_grad = True
+    y.requires_grad = True
+    t.requires_grad = True
+    pred = model(torch.stack([x, y, t]).T)
+    time_grad = gradient(pred, t)
+    return pred.detach(), time_grad.detach()
+
 def predict_loop_with_gradient(dataset, bs, model, device="cpu", verbose=True):
     n_data = len(dataset)
     batch_idx = torch.arange(0, n_data, dtype=int, device=device)
@@ -126,6 +138,26 @@ def predict_loop_with_gradient(dataset, bs, model, device="cpu", verbose=True):
     diff_grads = torch.cat(diff_grads)
     laplace_sums = torch.cat(laplace_sums)
     return preds, diff_grads, laplace_sums
+
+def predict_loop_with_time_gradient(dataset, bs, model, device="cpu", verbose=True):
+    n_data = len(dataset)
+    batch_idx = torch.arange(0, n_data, dtype=int, device=device)
+    range_ = range(0, n_data, bs)
+    train_iterator = tqdm(range_) if verbose else range_
+
+    preds = []
+    grads = []
+    laplace_sums = []
+    if True:
+    # with torch.no_grad():
+        for i in train_iterator:
+            idx = batch_idx[i : (i + bs)]
+            pred, grad_t = infere_time_gradient(dataset.samples[idx], model)
+            preds.append(pred)
+            grads.append(grad_t)
+    preds = torch.cat(preds)
+    grads_t = torch.cat(grads)
+    return preds, grads_t
 
 
 def predict_loop(dataset, bs, model, device="cpu", verbose=True):
