@@ -58,6 +58,21 @@ def small_one_single_file():
     np.save("small_coherence.npy", coherence)
     np.save("small_test_data.npy", full_data[:, :-1])
 
+def withandreas():
+    files = glob("/Users/peter.naylor/Downloads/wetransfer_data_2023-08-02_1137/*/*/*.nc")
+    id_= 0
+    list_arrays = []
+    for f in tqdm(files):
+        array = get_dataset_from_xarray(f, swath_id=id_)
+        list_arrays.append(array)
+        id_ += 1
+    full_data = np.concatenate(list_arrays, axis=0)
+    swath_id = full_data[:, -2]
+    coherence = full_data[:, -1]
+    np.save("peterglacier_coherence.npy", coherence)
+    np.save("peterglacier_swath_id.npy", swath_id)
+    np.save("peterglacier_data.npy", full_data[:, :-2])
+    import pdb; pdb.set_trace()
 
 if __name__ == "__main__":
-    one_single_file()
+    withandreas()
