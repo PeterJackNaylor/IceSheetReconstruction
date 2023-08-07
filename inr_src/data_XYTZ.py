@@ -11,7 +11,7 @@ def split_train(n, seed, train_fraction, train, swath_path=None):
         id_swath = list(range(int(n_swath)))
         last_id = int(n_swath * train_fraction)
         if train_fraction != 0.0 and train_fraction != 1.0:
-            np.random.shuffle(swath_idx)
+            np.random.shuffle(id_swath)
         swath_idx = id_swath[:last_id] if train else id_swath[last_id:]
         idx = np.where(np.isin(swath_id, swath_idx))[0]
     else:
