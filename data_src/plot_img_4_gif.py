@@ -20,7 +20,7 @@ tdevice = torch.device(device)
 opt = inr.AttrDict()
 opt.name = "fourier_test_data_normalise"#"fourier_test_data"#
 # model meta data
-folder = "../nf_meta/ray_splits"
+folder = "../nf_meta/ray_split_shuffle"
 npz = np.load(f"{folder}/{opt.name}.npz")
 weights = f"{folder}/{opt.name}.pth"
 model_hp = inr.AttrDict(npz)
@@ -70,7 +70,7 @@ model.load_state_dict(torch.load(weights, map_location=tdevice))
 
 
 
-folder_res = "../gif/results_ray_splits_fourier"
+folder_res = "../gif/results_ray_splits_fourier_shuffle"
 xrange = [XYT_xy[:,0].numpy().min(), XYT_xy[:,0].numpy().max()]
 yrange = [XYT_xy[:,1].numpy().min(), XYT_xy[:,1].numpy().max()]
 
