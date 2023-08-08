@@ -1,9 +1,9 @@
 configname: config.yaml
-epochs: 100
-trials: 100
+epochs: 50
+trials: 50
 n_jobs: 1
 dataset_folder: ./data/
-dataset: [test_data] # data/Jan_data, data/Feb_data data/Mar_data
+dataset: [peterglacier_data] # data/Jan_data, data/Feb_data data/Mar_data
 monthly_dataset: [] #Jan_data, Feb_data, Mar_data
 coherence: On # Off
 swath: On # Off
@@ -13,8 +13,8 @@ lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
 bs: # power of 2 search
-  - 9 # 512 # min
-  - 13 # 2048 # max
+  - 18  # 512 # min
+  - 20 # 2048 # max
 scale: # power of 2 search
   - 0 # min
   - 8 # max
