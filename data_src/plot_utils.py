@@ -81,8 +81,8 @@ def plot_scatter(pc_xy, pc_z, color_range, color, xrange=None, yrange=None, heat
             height=1000,
         )
     else:
-        fig = px.scatter(x=pc_xy[:,0], 
-                y=pc_xy[:,1], 
+        fig = px.scatter(x=pc_xy[:,1], 
+                y=pc_xy[:,0], 
                 color=pc_z,
                 width=1000, 
                 height=1000, 
@@ -92,8 +92,8 @@ def plot_scatter(pc_xy, pc_z, color_range, color, xrange=None, yrange=None, heat
     fig.update_layout(
         title=dict(font=dict(size=40), automargin=False, yref='paper'),
         font_size=40,
-        xaxis_title="Latitude",
-        yaxis_title="Longitude",
+        xaxis_title="Longitude",
+        yaxis_title="Latitude",
         coloraxis_colorbar=dict(
             title="Height (m)",
         ),
