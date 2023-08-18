@@ -97,6 +97,47 @@ class XYTZ(Dataset):
 
 
 
+### YO PETER PUT THIS IN READER PLZ
+    def get_dem_points(self, dem_name):
+        self.dem_points = np.load(dem_name)
+
+    def sample_dem_points(self):
+        # type, end time, sampling frequency
+
+        # if keyword == 'year':
+            # time_format = 'Y'
+
+        # elif keyword == 'month':
+            # time_format = 'M'
+        
+        # elif keyword == 'day':
+            # time_format = 'D'
+
+        # year -> 0-10
+        # month -> 0-10*12
+        # day -> 0-365*10
+
+        #start = self.samples[:, -1].min()
+        #end = self.samples[:, -1].max()
+
+        start_1990 = np.datetime64('2000-01-01')
+        start_date = start_1990 + np.timedelta64(1, 's') * self.samples[:, -1].min()#np.datetime64('2010-01-01')#
+        end_date = start_1990 + np.timedelta64(1, 's') * self.samples[:, -1].max()
+
+        dates = start_1990 + np.timedelta64(1, 's') * self.samples[:, -1].astype(int)
+        days_since_start_date = ((dates - start_date) / np.timedelta64(1, 'D')).astype(int)  # could replace D with time_format. This should replace other time scale
+        
+        # sample randomly from days_since_start_date   or uniform(start, end)
+        
+        # To do:
+        # this should replace how time is handled across all points
+        # make another function to sample time steps for dem points
+
+
+### STOP HERE
+
+
+
     def normalize(self, vector, nv, include_last=True):
         c = vector.shape[1]
         if nv is None:
