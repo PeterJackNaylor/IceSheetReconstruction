@@ -57,7 +57,6 @@ coherence = np.load(path_coherence)
 
 # Or if you prefer to load the model
 ## From saved
-
 model = inr.ReturnModel(
     model_hp.input_size,
     output_size=model_hp.output_size,
@@ -119,6 +118,7 @@ for t in date_range:#
     fig_gradient.update_layout(title_text=f"{date}")
 
     fig_gradient.write_image(f"{folder_res}/gradient/{date}.png")
+
 q33 = np.quantile(xytz_ds.samples[:,2], 0.33)
 idx = xytz_ds.samples[:,2] < q33
 xytz_ds.samples = xytz_ds.samples[idx]
