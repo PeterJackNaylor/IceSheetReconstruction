@@ -31,17 +31,17 @@ process INR {
             opt2 = "${opt_2}"
         }
         name = "${met}_${data}${opt}"
-        if (params.coherence){
+        if (params.coherence == "On"){
             opt_coherence = " --coherence_path ${datafolder}/${data.replace('data', 'coherence')}.npy"
         }else{
             opt_coherence = ""
         }
-        if (params.swath){
+        if (params.swath == "On"){
             opt_swath = " --swath_path ${datafolder}/${data.replace('data', 'swath')}.npy"
         }else{
             opt_swath = ""
         }
-        if (params.swath){
+        if (params.dem == "On"){
             opt_dem = " --dem_path ${datafolder}/${params.dem_path}"
         }else{
             opt_dem = ""
