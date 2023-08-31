@@ -83,6 +83,25 @@ def PetermannGlacier():
     np.save("peterglacier_data.npy", full_data[:, :-2])
     import pdb; pdb.set_trace()
 
+def PetermannGlacier_sub(start=2011, end=2013):
+    files = []
+    for i in range(start, end):
+        files += glob(f"/Users/peter.naylor/Downloads/IceSheet/wetransfer_data_2023-08-02_1137/{i}/*/*.nc")
+    id_= 0
+    list_arrays = []
+    for f in tqdm(files):
+        array = get_dataset_from_xarray(f, swath_id=id_)
+        list_arrays.append(array)
+        id_ += 1
+    full_data = np.concatenate(list_arrays, axis=0)
+    swath_id = full_data[:, -2]
+    coherence = full_data[:, -1]
+    np.save("SUBpeterglacier_coherence.npy", coherence)
+    np.save("SUBpeterglacier_swath_id.npy", swath_id)
+    np.save("SUBpeterglacier_data.npy", full_data[:, :-2])
+    import pdb; pdb.set_trace()
+
 if __name__ == "__main__":
-    one_single_file()
+    PetermannGlacier_sub()
+    # one_single_file()
     # PetermannGlacier()
