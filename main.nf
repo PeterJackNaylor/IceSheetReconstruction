@@ -9,7 +9,7 @@ option = Channel.from(params.normalise)
 
 config = file(params.configname)
 pyfile = file("experiments/run.py")
-
+println(params)
 
 process INR {
     publishDir "${params.output}", overwrite: true
