@@ -9,7 +9,7 @@ path = "../data/test_data.npy"
 
 opt = inr.AttrDict()
 opt.path = path
-opt.coherence_path = None#"../data/test_coherence.npy"
+opt.coherence_path = "../data/test_coherence.npy"
 opt.swath_path = "../data/test_swath.npy"
 opt.dem_path = "../data/peterglacier_dem.npy"
 opt.gpu = gpu
