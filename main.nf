@@ -12,7 +12,7 @@ pyfile = file("experiments/run.py")
 
 
 process INR {
-    publishDir "nf_meta/", overwrite: true
+    publishDir "${params.output}", overwrite: true
 
     input:
         tuple val(data), val(opt_2)
@@ -41,12 +41,17 @@ process INR {
         }else{
             opt_swath = ""
         }
+        if (params.swath){
+            opt_dem = " --dem_path ${datafolder}/${params.dem_path}"
+        }else{
+            opt_dem = ""
+        }
         """
         python ${pyfile} \
             --path ${datafolder}/${data}.npy \
             --name ${name} \
             --yaml_file ${config} \
-            --${met} --gpu ${opt2} ${opt_coherence} ${opt_swath}
+            --${met} --gpu ${opt2} ${opt_coherence} ${opt_swath} ${opt_dem}
         """
 }
 
