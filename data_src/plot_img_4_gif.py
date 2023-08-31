@@ -18,16 +18,16 @@ device = "cuda" if gpu else "cpu"
 tdevice = torch.device(device)
 # project variables
 opt = inr.AttrDict()
-opt.name = "fourier_test_data_normalise"#"fourier_test_data"#
+opt.name = "fourier_peterglacier_data_normalise"#"fourier_test_data"#
 # model meta data
-folder = "../nf_meta/ray_split_shuffle"
+folder = "/Users/peter.naylor/tmp/iceproject/fourrier_all_year_1"
 npz = np.load(f"{folder}/{opt.name}.npz")
 weights = f"{folder}/{opt.name}.pth"
 model_hp = inr.AttrDict(npz)
 model_hp = inr.util_train.clean_hp(model_hp)
 # data path
-path = "../data/test_data.npy"
-path_coherence = "../data/test_coherence.npy"
+path = "/Users/peter.naylor/tmp/iceproject/peterglacier_data.npy"
+path_coherence = "/Users/peter.naylor/tmp/iceproject/peterglacier_coherence.npy"
 mask_path = "./ice_mask.png"
 mask = io.imread(mask_path)[::-1]
 
@@ -57,7 +57,6 @@ coherence = np.load(path_coherence)
 
 # Or if you prefer to load the model
 ## From saved
-
 model = inr.ReturnModel(
     model_hp.input_size,
     output_size=model_hp.output_size,
@@ -70,7 +69,7 @@ model.load_state_dict(torch.load(weights, map_location=tdevice))
 
 
 
-folder_res = "../gif/results_ray_splits_fourier_shuffle"
+folder_res = "/Users/peter.naylor/tmp/iceproject/fourrier_all_year_1/gif"
 xrange = [XYT_xy[:,0].numpy().min(), XYT_xy[:,0].numpy().max()]
 yrange = [XYT_xy[:,1].numpy().min(), XYT_xy[:,1].numpy().max()]
 
@@ -119,6 +118,7 @@ for t in date_range:#
     fig_gradient.update_layout(title_text=f"{date}")
 
     fig_gradient.write_image(f"{folder_res}/gradient/{date}.png")
+
 q33 = np.quantile(xytz_ds.samples[:,2], 0.33)
 idx = xytz_ds.samples[:,2] < q33
 xytz_ds.samples = xytz_ds.samples[idx]

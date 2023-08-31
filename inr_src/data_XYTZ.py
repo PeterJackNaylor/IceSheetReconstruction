@@ -33,26 +33,43 @@ class XYTZ(Dataset):
         seed=42,
         pred_type="pc", # grid or pc
         step_grid=2.0,
-        nv=None,
+        nv_samples=None,
         nv_targets=None,
         normalise_targets=True,
         temporal=True,
         coherence_path=None,
         swath_path=None,
+        dem_path=None,
+        dem_coherence=0.7,
+        dem_freq="M",
         gpu=False
     ):
         self.need_target = not pred_type == "grid"
-        self.nv = nv
+        self.nv_samples = nv_samples
         self.input_size = 3 if temporal else 2
         self.step_grid = step_grid
-
-        pc = np.load(path)
+        self.dem_shape = 0
+        self.dem_repeats = 0
 
         self.need_weights = coherence_path is not None
+        weights = None
         if self.need_weights:
             weights = np.load(coherence_path)
+            weights = torch.tensor(weights)
+        self.weights = weights
 
+        self.need_dem = dem_path is not None
+        if self.need_dem:
+            dem = np.load(dem_path)
+            dem_xyt = dem[:, :2]
+            dem_targets = dem[:, 2:3]
+            self.dem_shape = dem.shape[0]
+            if self.need_weights:
+                dem_w = np.ones_like(dem_targets[:,0]) * dem_coherence
+        
+        ### SETUP PC
         if pred_type == "pc":
+            pc = np.load(path)
             samples, targets = self.setup_data(pc)
             idx = split_train(samples.shape[0], seed, train_fraction, train_fold, swath_path=swath_path)
             samples = samples[idx]
@@ -65,22 +82,48 @@ class XYTZ(Dataset):
         elif pred_type == "grid":
             samples = self.setup_uniform_grid(pc, time)
 
-        nv_samples = self.normalize(samples, nv, True)
+        if self.need_dem and temporal:
+            dem_xyt = np.concatenate([dem_xyt, np.zeros((dem_xyt.shape[0],1))], axis=1)
+            self.setup_dem(samples[:,-1], freq=dem_freq)
+        ### END SETUP PC
+
+        ### NORMALISATION
+        nv_samples = self.normalize(samples, nv_samples, True)
         if self.need_target:
             if not normalise_targets:
                 nv_targets = [(0, 1) for _ in range(targets.shape[1])]
             nv_targets = self.normalize(targets, nv_targets, True)
+        if self.need_dem:
+            self.normalize(dem_xyt, nv_samples, True)
+        ### END NORMALISATION
 
+
+        ### TORCH SETUP
         self.samples = torch.tensor(samples).float()
+        self.sample_size = self.samples.shape[0]
         self.nv_samples = nv_samples
         self.nv_targets = nv_targets
 
         if self.need_target:
             self.targets = torch.tensor(targets)
+            if self.need_dem:
+                dem_targets = torch.tensor(dem_targets)
+                self.targets = torch.cat([self.targets, dem_targets])
+
         if self.need_weights:
-            self.weights = torch.tensor(weights)
+            
+            if self.need_dem:
+                dem_weights = torch.tensor(dem_w)
+                self.weights = torch.cat([self.weights, dem_weights])
+
+        if self.need_dem:
+            dem_xyt = torch.tensor(dem_xyt).float()
+            self.time_samples = torch.tensor(np.unique(self.samples[:,-1])).float()
+            self.samples = torch.cat([self.samples, dem_xyt])
+
         if gpu:
             self.send_cuda()
+        ### END TORCH SETUP
 
     def setup_data(self, pc):
         sample_idx = np.array([0,1,-1])
@@ -95,7 +138,16 @@ class XYTZ(Dataset):
         if self.need_weights:
             self.weights = self.weights.to("cuda")
 
-
+    def setup_dem(self, time, freq="M"): # D -> Day, M -> Month, Y-> year
+        nber_of_days = time.max() - time.min()
+        nber_of_months = int(np.round(nber_of_days / 30))
+        nber_of_years = int(np.round(nber_of_days / 365))
+        if freq == "D":
+            self.dem_repeats = int(np.round(nber_of_days))
+        elif freq == "M":
+            self.dem_repeats = nber_of_months
+        elif freq == "Y":
+            self.dem_repeats = nber_of_years
 
     def normalize(self, vector, nv, include_last=True):
         c = vector.shape[1]
@@ -137,29 +189,39 @@ class XYTZ(Dataset):
         return samples
 
     def __len__(self):
-        return self.samples.shape[0]
+        return int(self.sample_size + self.dem_shape * self.dem_repeats)
 
     def __getitem__(self, idx):
-        sample = self.samples[idx]
-        
+        if self.need_dem:
+            idx_dem = idx > self.sample_size
+            n_dem = idx_dem.sum()
+            idx_0 = torch.remainder(idx[idx_dem] - self.sample_size, self.dem_shape)
+            idx[idx_dem] = idx_0 + self.sample_size
+            t_idx = torch.randint(0, self.time_samples.shape[0], (n_dem,))
+            sample = self.samples[idx]
+            sample[idx_dem, 2] = self.time_samples[t_idx]
+            # idx = idx_dem
+        else:
+            sample = self.samples[idx]
         if not self.need_target:
             return sample
-        target = self.targets[idx]
-        if self.weights is not None:
-            weights = self.weights[idx]
-            return sample, weights, target
-        return sample, target
-
+        else:
+            target = self.targets[idx]
+            if self.weights is not None:
+                weights = self.weights[idx]
+                return sample, weights, target
+            return sample, target
+    
 
 class XYTZ_grid(XYTZ):
-    def __init__(self, grid, time, nv=None, step_grid=1, temporal=False, gpu=False):
+    def __init__(self, grid, time, nv_samples=None, step_grid=1, temporal=False, gpu=False):
 
         self.need_target = False
-        self.nv = nv
+        self.nv = nv_samples
         self.input_size = 3
         self.step_grid = step_grid
         samples = self.setup_uniform_grid(grid, time, temporal=temporal)
-        self.normalize(samples, nv, True)
+        self.normalize(samples, nv_samples, True)
 
         self.samples = torch.tensor(samples).float()
         if gpu:
@@ -169,14 +231,14 @@ class XYTZ_grid(XYTZ):
 
 def return_dataset_prediction(
     path,
-    nv=None,
+    nv_samples=None,
     temporal=True
 ):
     xytz = XYTZ(
         path,
         pred_type="grid_predictions",
         temporal=temporal,
-        nv=nv,
+        nv_samples=nv_samples,
     )
     return xytz
 
@@ -185,6 +247,7 @@ def return_dataset(
     path,
     coherence=None,
     swath=None,
+    dem=None,
     normalise_targets=True,
     temporal=True,
     gpu=False
@@ -196,14 +259,15 @@ def return_dataset(
         train_fraction=0.8,
         seed=42,
         pred_type="pc",
-        nv=None,
+        nv_targets=None,
         normalise_targets=normalise_targets,
         temporal=temporal,
         coherence_path=coherence,
+        dem_path=dem,
         swath_path=swath,
         gpu=gpu
     )
-    nv = xytz_train.nv_samples
+    nv_samples = xytz_train.nv_samples
     nv_targets = xytz_train.nv_targets
     xytz_test = XYTZ(
         path,
@@ -211,13 +275,13 @@ def return_dataset(
         train_fraction=0.8,
         seed=42,
         pred_type="pc",
-        nv=nv,
+        nv_samples=nv_samples,
         nv_targets=nv_targets,
         temporal=temporal,
         swath_path=swath,
         gpu=gpu
     )
-    return xytz_train, xytz_test, nv, nv_targets
+    return xytz_train, xytz_test, nv_samples, nv_targets
 
 def main():
     path = "./data/test_data.npy"

@@ -212,6 +212,24 @@ def continuous_diff(x, model):
 
     return dz_dxyt
 
+def tvn_loss(dataset, model, n_data, bs, device, 
+             input_size, mean_xyt, std_xyt):
+    ## return tvn loss over space and time
+    ind = torch.randint(
+        0,
+        n_data,
+        size=(bs,),
+        requires_grad=False,
+        device=device,
+    )
+    x_sample = dataset.samples[ind, :]
+    x_sample.requires_grad_(False)
+    
+    noise_xyt = torch.normal(mean_xyt, std_xyt)
+    x_sample[:, 0:input_size] += noise_xyt
+    dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
+    return dz_dxyt
+
 
 def estimate_density(
     dataset,
@@ -241,7 +259,7 @@ def estimate_density(
     lambda_t = opt.lambda_t
     lambda_xy = opt.lambda_xy
     grad = not(lambda_t == lambda_xy == 0)
-
+    print(grad)
     loss_fn_t = RMSELoss() #mseloss
     loss_fn_l2 = RMSELossW() if weights else RMSELoss()
     loss_fn_l1 = L1LossW() if weights else L1Loss()
@@ -261,48 +279,37 @@ def estimate_density(
     else:
         e_iterator = range(1, opt.epochs + 1)
 
+    n_data = dataset.sample_size + dataset.dem_shape
+    bs = opt.bs
     for epoch in e_iterator:
-        running_loss, total_num = 0.0, 0
-        n_data = len(dataset)
-        batch_idx = torch.randperm(n_data, device=device)
-        bs = opt.bs
         if opt.verbose:
             train_iterator = tqdm(range(0, n_data, bs))
         else:
             train_iterator = range(0, n_data, bs)
-
+        running_loss, total_num = 0.0, 0
+        batch_idx = torch.randperm(n_data, device=device)
         for i in train_iterator:
-
-            idx = batch_idx[i : (i + bs)]
+            data_batch = dataset[batch_idx[i : (i + bs)]] # possibly sample, target, weights
             optimizer.zero_grad()
             if True:
             #with torch.cuda.amp.autocast():
-                target_pred = model(dataset.samples[idx])
+                target_pred = model(data_batch[0])
                 sample_weights = None
                 if weights:
-                    sample_weights = dataset.weights[idx]
-                lmse = loss_fn_l2(target_pred, dataset.targets[idx], sample_weights)
-                lmae = loss_fn_l1(target_pred, dataset.targets[idx], sample_weights)
+                    sample_weights = data_batch[2]
+                lmse = loss_fn_l2(target_pred, data_batch[1], sample_weights)
+                lmae = loss_fn_l1(target_pred, data_batch[1], sample_weights)
 
                 loss = lmse + lambda_l1 * lmae
                 if grad:
-                    ind = torch.randint(
-                        0,
-                        n_data,
-                        size=(bs,),
-                        requires_grad=False,
-                        device=device,
-                    )
-                    x_sample = dataset.samples[ind, :]
-                    x_sample.requires_grad_(False)
-                    
-                    noise_xyt = torch.normal(mean_xyt, std_xyt)
-                    x_sample[:, 0:s] += noise_xyt
-                    dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
-                    loss = loss + \
-                        lambda_xy * loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2])
+                    dz_dxyt = tvn_loss(dataset, model, n_data, bs, 
+                                       device, s, mean_xyt, std_xyt)
+                    loss_xy = loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2])
+                    loss += lambda_xy * loss_xy
                     if temporal:
-                        loss += lambda_t * loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
+                        loss_t = loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
+                        loss += lambda_t * loss_t
+                    
 
             # Clip gradients
             loss.backward()

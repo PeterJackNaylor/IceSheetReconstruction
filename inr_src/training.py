@@ -9,6 +9,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         opt.path,
         coherence=opt.coherence_path,
         swath=opt.swath_path,
+        dem=opt.dem_path,
         normalise_targets=opt.normalise_targets,
         temporal=opt.temporal,
         gpu=gpu
@@ -37,12 +38,14 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         model = model.cuda()
 
     weights = opt.coherence_path is not None
+    file_name = opt.tmp_name if "tmp_name" in opt.keys() else opt.name
+        
     outputs = estimate_density(
         train,
         test,
         model,
         model_hp,
-        opt.tmp_name,
+        file_name,
         weights=weights,
         trial=trial,
         return_model=return_model,
@@ -61,7 +64,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
 
     if return_model:
         np.savez(
-                opt.tmp_name + ".npz",
+                file_name + ".npz",
                 **model_hp,
             )
         return model, model_hp

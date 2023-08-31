@@ -38,6 +38,12 @@ def parser_f():
     )
 
     parser.add_argument(
+        "--dem_path",
+        type=str,
+        default=None,
+    )
+
+    parser.add_argument(
         "--output_dim",
         type=int,
     )
