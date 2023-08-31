@@ -18,16 +18,16 @@ device = "cuda" if gpu else "cpu"
 tdevice = torch.device(device)
 # project variables
 opt = inr.AttrDict()
-opt.name = "fourier_test_data_normalise"#"fourier_test_data"#
+opt.name = "fourier_peterglacier_data_normalise"#"fourier_test_data"#
 # model meta data
-folder = "../nf_meta/ray_split_shuffle"
+folder = "/Users/peter.naylor/tmp/iceproject/fourrier_all_year_1"
 npz = np.load(f"{folder}/{opt.name}.npz")
 weights = f"{folder}/{opt.name}.pth"
 model_hp = inr.AttrDict(npz)
 model_hp = inr.util_train.clean_hp(model_hp)
 # data path
-path = "../data/test_data.npy"
-path_coherence = "../data/test_coherence.npy"
+path = "/Users/peter.naylor/tmp/iceproject/peterglacier_data.npy"
+path_coherence = "/Users/peter.naylor/tmp/iceproject/peterglacier_coherence.npy"
 mask_path = "./ice_mask.png"
 mask = io.imread(mask_path)[::-1]
 
@@ -70,7 +70,7 @@ model.load_state_dict(torch.load(weights, map_location=tdevice))
 
 
 
-folder_res = "../gif/results_ray_splits_fourier_shuffle"
+folder_res = "/Users/peter.naylor/tmp/iceproject/fourrier_all_year_1/gif"
 xrange = [XYT_xy[:,0].numpy().min(), XYT_xy[:,0].numpy().max()]
 yrange = [XYT_xy[:,1].numpy().min(), XYT_xy[:,1].numpy().max()]
 
