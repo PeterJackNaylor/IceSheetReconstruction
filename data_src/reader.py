@@ -79,7 +79,7 @@ def PetermannGlacier():
     swath_id = full_data[:, -2]
     coherence = full_data[:, -1]
     np.save("peterglacier_coherence.npy", coherence)
-    np.save("peterglacier_swath_id.npy", swath_id)
+    np.save("peterglacier_swath.npy", swath_id)
     np.save("peterglacier_data.npy", full_data[:, :-2])
     import pdb; pdb.set_trace()
 
@@ -97,7 +97,7 @@ def PetermannGlacier_sub(start=2011, end=2013):
     swath_id = full_data[:, -2]
     coherence = full_data[:, -1]
     np.save("SUBpeterglacier_coherence.npy", coherence)
-    np.save("SUBpeterglacier_swath_id.npy", swath_id)
+    np.save("SUBpeterglacier_swath.npy", swath_id)
     np.save("SUBpeterglacier_data.npy", full_data[:, :-2])
     import pdb; pdb.set_trace()
 
