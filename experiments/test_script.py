@@ -5,16 +5,17 @@ import inr_src as inr
 gpu = torch.cuda.is_available()
 device = "cuda" if gpu else "cpu"
 
-path = "../data/test_data.npy"
+name = "SUBpeterglacier"
+path = f"../data/{name}_data.npy"
 
 opt = inr.AttrDict()
 opt.path = path
-opt.coherence_path = "../data/test_coherence.npy"
-opt.swath_path = "../data/test_swath.npy"
+opt.coherence_path = f"../data/{name}_coherence.npy"
+opt.swath_path = f"../data/{name}_swath.npy"
 opt.dem_path = "../data/peterglacier_dem.npy"
 opt.gpu = gpu
 opt.model_name = "RFF" # or siren or wires
-opt.name = "rff_debug_dem"
+opt.name = "{}_test"
 opt.temporal = True
 opt.normalise_targets = True
 model_hp = inr.AttrDict()
@@ -31,9 +32,9 @@ model_hp.normalise_targets = opt.normalise_targets
 model_hp.verbose = True
 model_hp.epochs = 50
 
-model_hp.bs = 2**12
+model_hp.bs = 2**14
 model_hp.scale = 5
-model_hp.lr = 1e-4
+model_hp.lr = 1e-5
 model_hp.output_size = 1
 
 if opt.siren or opt.wires:
