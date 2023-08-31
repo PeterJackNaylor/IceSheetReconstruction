@@ -38,7 +38,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         model = model.cuda()
 
     weights = opt.coherence_path is not None
-    file_name = opt.tmp_name if "tmp_name" in opt.keys() else opt.name
+    file_name = opt.tmp_name if hasattr(opt, "tmp_name") else opt.name
         
     outputs = estimate_density(
         train,

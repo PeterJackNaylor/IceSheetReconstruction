@@ -202,7 +202,6 @@ class XYTZ(Dataset):
             t_idx = torch.randint(0, self.time_samples.shape[0], (n_dem,))
             sample = self.samples[idx]
             sample[idx_dem, 2] = self.time_samples[t_idx]
-            # idx = idx_dem
         else:
             sample = self.samples[idx]
         if not self.need_target:
