@@ -137,6 +137,8 @@ class XYTZ(Dataset):
             self.targets = self.targets.to("cuda")
         if self.need_weights:
             self.weights = self.weights.to("cuda")
+        if self.need_dem:
+            self.time_samples = self.time_samples.to("cuda")
 
     def setup_dem(self, time, freq="M"): # D -> Day, M -> Month, Y-> year
         nber_of_days = time.max() - time.min()
