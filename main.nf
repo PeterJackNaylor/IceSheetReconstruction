@@ -62,7 +62,8 @@ process group {
     publishDir "nf_meta/", overwrite: true
 
     input:
-        tuple path(weight), path(npz)
+        path(weight)
+        path(npz)
         path(config)
     output:
         path("*.csv")
