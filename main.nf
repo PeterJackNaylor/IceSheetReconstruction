@@ -56,7 +56,7 @@ process INR {
 }
 
 
-pyfile_group = file("experiments/evaluate.py")
+py_evaluate = file("experiments/evaluate.py")
 
 process group {
     publishDir "nf_meta/", overwrite: true
@@ -70,7 +70,9 @@ process group {
 
     script:
         """
-        python $pyfile_group
+        python $py_evaluate --model_param $npz \
+                            --model_weights $weight \
+                            --config $config
         """
 }
 

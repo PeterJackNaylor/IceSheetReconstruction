@@ -46,6 +46,7 @@ def load_data_model(npz_file, weights, config):
     model_hp = inr.util_train.clean_hp(model_hp)
 
     # load data
+    import pdb; pdb.set_trace()
     xytz_ds = inr.XYTZ(
             config.data_path,
             train_fold=False,
@@ -81,7 +82,7 @@ def load_data_model(npz_file, weights, config):
 def main():
     
     args = parser_f()
-    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args.config)
+    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=False)
 
