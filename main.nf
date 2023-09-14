@@ -9,7 +9,7 @@ option = Channel.from(params.normalise)
 
 config = file(params.configname)
 pyfile = file("experiments/run.py")
-println(params)
+
 
 process INR {
     publishDir "${params.output}", overwrite: true
@@ -56,13 +56,14 @@ process INR {
 }
 
 
-pyfile_group = file("experiments/regroup_l1.py")
+pyfile_group = file("experiments/evaluate.py")
+
 process group {
     publishDir "nf_meta/", overwrite: true
 
     input:
-        path(npz)
-        
+        tuple path(weight), path(npz)
+        path(config)
     output:
         path("*.csv")
 
@@ -76,5 +77,5 @@ workflow {
 
     main:
         INR(ds, method, option)
-        group(INR.output[1].collect())
+        group(INR.output, config)
 }

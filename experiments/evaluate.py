@@ -1,0 +1,101 @@
+
+import os
+import numpy as np
+import torch
+import argparse
+
+import inr_src as inr
+
+gpu = torch.cuda.is_available()
+device = "cuda" if gpu else "cpu"
+tdevice = torch.device(device)
+
+def parser_f():
+
+    parser = argparse.ArgumentParser(
+        description="Evaluate",
+    )
+    parser.add_argument(
+        "--model_param",
+        type=str,
+    )
+    parser.add_argument(
+        "--model_weights",
+        type=str,
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+    )
+
+    args = parser.parse_args()
+    args.config = inr.read_yaml(args.config)
+
+    return args
+
+
+
+def load_data_model(npz_file, weights, config):
+    # project variables
+    opt = inr.AttrDict()
+    opt.name = os.path.basename(npz_file).split(".")[0]
+    # model meta data
+    npz = np.load(npz_file)
+    model_hp = inr.AttrDict(npz)
+    model_hp = inr.util_train.clean_hp(model_hp)
+
+    # load data
+    xytz_ds = inr.XYTZ(
+            config.data_path,
+            train_fold=False,
+            train_fraction=0.0,
+            seed=42,
+            pred_type="pc",
+            nv=tuple(model_hp.nv),
+            nv_targets=tuple(model_hp.nv_target),
+            normalise_targets=model_hp.normalise_targets,
+            temporal=model_hp.nv.shape[0] == 3,
+            gpu=gpu
+        )
+    coherence = np.load(config.coherence_path)
+
+    # Or if you prefer to load the model
+    ## From saved
+
+    model = inr.ReturnModel(
+        model_hp.input_size,
+        output_size=model_hp.output_size,
+        arch=model_hp.architecture,
+        args=model_hp,
+    )
+    print(f"loading weight: {weights}")
+    print(f"Model_hp: {model_hp}")
+    model.load_state_dict(torch.load(weights, map_location=tdevice))
+
+    return xytz_ds, model, opt, model_hp
+
+
+# Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
+
+def main():
+    
+    args = parser_f()
+    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args.config)
+
+    prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=False)
+
+    idx = np.where(prediction > 0)[0]
+    error = xytz.targets[idx] - prediction[idx]
+
+    s = model_hp.nv_target[0,1]
+    mse_norm = ((error ** 2).mean() ** 0.5) * s
+    mae_norm = error.abs().mean() * s
+
+    mse_norm_coh = (((error * coherence) ** 2).mean() ** 0.5) * s
+    mae_norm_coh = (error * coherence).abs().mean() * s
+
+
+
+if __name__ == "__main__":
+    main()
