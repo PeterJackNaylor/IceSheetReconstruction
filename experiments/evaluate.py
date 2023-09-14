@@ -6,7 +6,9 @@ import argparse
 
 import inr_src as inr
 
-
+gpu = torch.cuda.is_available()
+device = "cuda" if gpu else "cpu"
+tdevice = torch.device(device)
 
 def parser_f():
 
@@ -34,7 +36,7 @@ def parser_f():
 
 
 
-def load_data_model(npz_file, weights, config, dev):
+def load_data_model(npz_file, weights, config):
     # project variables
     opt = inr.AttrDict()
     opt.name = os.path.basename(npz_file).split(".")[0]
@@ -45,7 +47,7 @@ def load_data_model(npz_file, weights, config, dev):
 
     # load data
     xytz_ds = inr.XYTZ(
-            path,
+            config.data_path,
             train_fold=False,
             train_fraction=0.0,
             seed=42,
@@ -56,7 +58,7 @@ def load_data_model(npz_file, weights, config, dev):
             temporal=model_hp.nv.shape[0] == 3,
             gpu=gpu
         )
-    coherence = np.load(path_coherence)
+    coherence = np.load(config.coherence_path)
 
     # Or if you prefer to load the model
     ## From saved
@@ -69,22 +71,21 @@ def load_data_model(npz_file, weights, config, dev):
     )
     print(f"loading weight: {weights}")
     print(f"Model_hp: {model_hp}")
-    model.load_state_dict(torch.load(weights, map_location=dev))
+    model.load_state_dict(torch.load(weights, map_location=tdevice))
 
     return xytz_ds, model, opt, model_hp
 
 
-# Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, daily difference, error quartiles?
+# Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
 
 def main():
-    gpu = torch.cuda.is_available()
-    device = "cuda" if gpu else "cpu"
-    tdevice = torch.device(device)
+    
     args = parser_f()
-    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args.config, tdevice)
+    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args.config)
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=False)
 
+    idx = np.where(prediction > 0)[0]
     error = xytz.targets[idx] - prediction[idx]
 
     s = model_hp.nv_target[0,1]
@@ -93,6 +94,7 @@ def main():
 
     mse_norm_coh = (((error * coherence) ** 2).mean() ** 0.5) * s
     mae_norm_coh = (error * coherence).abs().mean() * s
+
 
 
 if __name__ == "__main__":
