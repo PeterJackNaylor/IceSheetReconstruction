@@ -16,7 +16,6 @@ def clean_up_path(name, trial, ntrials):
 
 def main():
     options = parser_f()
-    print("need to do something for this")
     options.outname = options.name
 
     study = optuna.create_study(

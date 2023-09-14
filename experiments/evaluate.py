@@ -47,16 +47,26 @@ def load_data_model(npz_file, weights, config):
 
     # load data
     import pdb; pdb.set_trace()
+    data_path = f"{config.dataset_folder}{config.dataset[0]}.npy"
+    coherence_path = data_path.replace("data.npy", "coherence.npy")
+    coherence_option = coherence_path if model_hp.coherence else None
+    coherence_option =  False
+    dem_path = data_path.replace("data.npy", "swath.npy")
+    swath_path = f"{config.dataset_folder}{config.dem_path}"
+
     xytz_ds = inr.XYTZ(
-            config.data_path,
+            data_path,
             train_fold=False,
             train_fraction=0.0,
             seed=42,
             pred_type="pc",
-            nv=tuple(model_hp.nv),
+            nv_samples=tuple(model_hp.nv_samples),
             nv_targets=tuple(model_hp.nv_target),
             normalise_targets=model_hp.normalise_targets,
             temporal=model_hp.nv.shape[0] == 3,
+            coherence_path=coherence_option,
+            dem_path=dem_path,
+            swath_path=swath_path,
             gpu=gpu
         )
     coherence = np.load(config.coherence_path)
@@ -74,7 +84,7 @@ def load_data_model(npz_file, weights, config):
     print(f"Model_hp: {model_hp}")
     model.load_state_dict(torch.load(weights, map_location=tdevice))
 
-    return xytz_ds, model, opt, model_hp
+    return xytz_ds, model, coherence, opt, model_hp
 
 
 # Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
@@ -82,7 +92,7 @@ def load_data_model(npz_file, weights, config):
 def main():
     
     args = parser_f()
-    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
+    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args.config)
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=False)
 

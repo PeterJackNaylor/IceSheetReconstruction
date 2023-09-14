@@ -5,7 +5,7 @@ from .util_train import estimate_density
 
 def train(opt, model_hp, trial=None, return_model=True, gpu=False):
 
-    train, test, nv, nv_target = return_dataset(
+    train, test, nv_samples, nv_target = return_dataset(
         opt.path,
         coherence=opt.coherence_path,
         swath=opt.swath_path,
@@ -16,7 +16,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     )
     model_hp.input_size = train.input_size
     model_hp.output_size = len(nv_target)
-    model_hp.nv = nv
+    model_hp.nv_samples = nv_samples
     model_hp.nv_target = nv_target
     model_hp.normalise_targets = opt.normalise_targets
 
