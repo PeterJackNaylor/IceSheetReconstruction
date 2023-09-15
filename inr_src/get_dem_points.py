@@ -6,7 +6,7 @@ from shapely import affinity
 from shapely.geometry import Point, Polygon
 from tqdm import tqdm
 from glob import glob
-
+import pickle
 import argparse
 
 def config():
@@ -95,7 +95,6 @@ def plot_polygon(point_support, points):
 def generate_polygones(point_support, distance):
     max_points = 0
     final_polygon = None
-    import pdb; pdb.set_trace()
     try:
         for polygon in point_support.geoms:
             num_points = len(polygon.exterior.coords)
@@ -176,7 +175,11 @@ def main():
     points = points[indices]
     alpha_shape = alphashape.alphashape(points, opt.alpha)
     final_polygon, scaled_polygon, buffer_polygon = generate_polygones(alpha_shape, opt.distance)
+    with open('./envelop_peterglacier.pickle', 'wb') as poly_file:
+        pickle.dump(final_polygon, poly_file, pickle.HIGHEST_PROTOCOL)
+    
     dem_points = add_dem(opt.dem_path, buffer_polygon, final_polygon)
+    
     if opt.plot:
         plot_polygon(alpha_shape, points)
         plt.savefig(f"{opt.name}.png")
