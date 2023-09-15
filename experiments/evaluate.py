@@ -110,6 +110,7 @@ def main():
     error = gt[idx] - prediction[idx]
 
     s = model_hp.nv_target[0,1]
+    import pdb; pdb.set_trace()
     mse_norm = ((error ** 2).mean() ** 0.5) * s
     mae_norm = error.abs().mean() * s
 
@@ -120,7 +121,7 @@ def main():
     quantiles = [0.25, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 
     print(err_describe.describe(percentiles=quantiles))
-    import pdb; pdb.set_trace()
+    
 
 
 if __name__ == "__main__":
