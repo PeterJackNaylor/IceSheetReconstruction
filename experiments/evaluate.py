@@ -28,7 +28,11 @@ def parser_f():
         type=str,
         default=None,
     )
-
+    parser.add_argument(
+        "--datafolder",
+        type=str,
+        default=None,
+    )
     args = parser.parse_args()
     args.config = inr.read_yaml(args.config)
 
@@ -36,7 +40,7 @@ def parser_f():
 
 
 
-def load_data_model(npz_file, weights, config):
+def load_data_model(npz_file, weights, args):
     # project variables
     opt = inr.AttrDict()
     opt.name = os.path.basename(npz_file).split(".")[0]
@@ -47,12 +51,12 @@ def load_data_model(npz_file, weights, config):
 
     # load data
 
-    data_path = f"{config.dataset_folder}{config.dataset[0]}.npy"
+    data_path = f"{args.datafolder}{args.config.dataset[0]}.npy"
     coherence_path = data_path.replace("data.npy", "coherence.npy")
     # coherence_option = coherence_path if model_hp.coherence else None
     coherence_option =  None
     dem_path = data_path.replace("data.npy", "swath.npy")
-    swath_path = f"{config.dataset_folder}{config.dem_path}"
+    swath_path = f"{args.datafolder}{args.config.dem_path}"
 
     xytz_ds = inr.XYTZ(
             data_path,
@@ -93,7 +97,7 @@ def load_data_model(npz_file, weights, config):
 def main():
     
     args = parser_f()
-    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args.config)
+    xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=False)
 

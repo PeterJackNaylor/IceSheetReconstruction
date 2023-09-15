@@ -72,7 +72,8 @@ process group {
         """
         python $py_evaluate --model_param $npz \
                             --model_weights $weight \
-                            --config $config
+                            --config $config \ 
+                            --datafolder ${datafolder}
         """
 }
 
