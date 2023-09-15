@@ -69,7 +69,8 @@ def load_data_model(npz_file, weights, config):
             swath_path=swath_path,
             gpu=gpu
         )
-    coherence = np.load(config.coherence_path)
+
+    coherence = np.load(coherence_path)
 
     # Or if you prefer to load the model
     ## From saved
