@@ -197,6 +197,7 @@ class XYTZ(Dataset):
         if self.need_dem:
             idx_dem = idx > self.sample_size
             n_dem = idx_dem.sum()
+            print(n_dem)
             idx_0 = torch.remainder(idx[idx_dem] - self.sample_size, self.dem_shape)
             idx[idx_dem] = idx_0 + self.sample_size
             t_idx = torch.randint(0, self.time_samples.shape[0], (n_dem,))
