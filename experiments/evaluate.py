@@ -57,7 +57,7 @@ def load_data_model(npz_file, weights, args):
     coherence_option =  None
     swath_path = data_path.replace("data.npy", "swath.npy")
     dem_path = f"{args.datafolder}/{args.config.dem_path}"
-    import pdb; pdb.set_trace()
+    print("Have to switch nv to nv_samples")
     xytz_ds = inr.XYTZ(
             data_path,
             train_fold=False,
@@ -75,9 +75,6 @@ def load_data_model(npz_file, weights, args):
         )
 
     coherence = np.load(coherence_path)
-
-    # Or if you prefer to load the model
-    ## From saved
 
     model = inr.ReturnModel(
         model_hp.input_size,
@@ -98,6 +95,7 @@ def main():
     
     args = parser_f()
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
+    import pdb; pdb.set_trace()
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=False)
 
