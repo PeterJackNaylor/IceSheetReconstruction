@@ -82,6 +82,8 @@ def load_data_model(npz_file, weights, args):
         arch=model_hp.architecture,
         args=model_hp,
     )
+    if gpu:
+        model = model.cuda()
     print(f"loading weight: {weights}")
     print(f"Model_hp: {model_hp}")
     model.load_state_dict(torch.load(weights, map_location=tdevice))
