@@ -170,7 +170,11 @@ def predict_loop(dataset, bs, model, device="cpu", verbose=True):
     with torch.no_grad():
         for i in train_iterator:
             idx = batch_idx[i : (i + bs)]
-            pred = model(dataset.samples[idx])
+            samples = dataset[idx]
+            if dataset.need_target:
+                samples = samples[0]
+            
+            pred = model(samples)
             preds.append(pred)
     preds = torch.cat(preds)
     return preds
