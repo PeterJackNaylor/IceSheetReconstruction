@@ -51,12 +51,12 @@ def load_data_model(npz_file, weights, args):
 
     # load data
 
-    data_path = f"{args.datafolder}{args.config.dataset[0]}.npy"
+    data_path = f"{args.datafolder}/{args.config.dataset[0]}.npy"
     coherence_path = data_path.replace("data.npy", "coherence.npy")
     # coherence_option = coherence_path if model_hp.coherence else None
     coherence_option =  None
     dem_path = data_path.replace("data.npy", "swath.npy")
-    swath_path = f"{args.datafolder}{args.config.dem_path}"
+    swath_path = f"{args.datafolder}/{args.config.dem_path}"
 
     xytz_ds = inr.XYTZ(
             data_path,
