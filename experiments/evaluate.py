@@ -1,6 +1,7 @@
 
 import os
 import numpy as np
+import pandas as pd
 import torch
 import argparse
 
@@ -99,7 +100,9 @@ def main():
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=True)
-    import pdb; pdb.set_trace()
+
+    if gpu:
+        prediction = prediction.cpu()
     idx = np.where(prediction.numpy() > 0)[0]
     error = xytz.targets[idx] - prediction[idx]
 
@@ -110,6 +113,11 @@ def main():
     mse_norm_coh = (((error * coherence) ** 2).mean() ** 0.5) * s
     mae_norm_coh = (error * coherence).abs().mean() * s
 
+    err_describe = pd.DataFrame(error.numpy())
+    quantiles = [0.25, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+
+    print(err_describe.describe(percentiles=quantiles))
+    import pdb; pdb.set_trace()
 
 
 if __name__ == "__main__":
