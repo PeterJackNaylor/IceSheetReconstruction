@@ -49,7 +49,7 @@ def load_data_model(npz_file, weights, config):
     import pdb; pdb.set_trace()
     data_path = f"{config.dataset_folder}{config.dataset[0]}.npy"
     coherence_path = data_path.replace("data.npy", "coherence.npy")
-    coherence_option = coherence_path if model_hp.coherence else None
+    # coherence_option = coherence_path if model_hp.coherence else None
     coherence_option =  False
     dem_path = data_path.replace("data.npy", "swath.npy")
     swath_path = f"{config.dataset_folder}{config.dem_path}"
