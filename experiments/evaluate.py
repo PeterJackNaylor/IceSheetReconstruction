@@ -57,7 +57,8 @@ def load_data_model(npz_file, weights, args):
     # coherence_option = coherence_path if model_hp.coherence else None
     coherence_option =  None
     swath_path = data_path.replace("data.npy", "swath.npy")
-    dem_path = f"{args.datafolder}/{args.config.dem_path}"
+    # dem_path = f"{args.datafolder}/{args.config.dem_path}"
+    dem_path = None
     print("Have to switch nv to nv_samples")
     xytz_ds = inr.XYTZ(
             data_path,
