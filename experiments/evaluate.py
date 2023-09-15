@@ -94,12 +94,7 @@ def load_data_model(npz_file, weights, args):
     return xytz_ds, model, coherence, opt, model_hp
 
 def setup_uniform_grid(pc, step):
-
-    xmax = pc[:,0].max()
-    xmin = pc[:,0].min()
-
-    ymax = pc[:,1].max()
-    ymin = pc[:,1].min()
+    xmin, ymin, xmax, ymax = pc.bounds
 
     xx, yy = np.meshgrid(
         np.arange(xmin, xmax, step),
@@ -111,6 +106,7 @@ def setup_uniform_grid(pc, step):
     return samples
 
 def keep_within_dem(grid, poly):
+    import pdb; pdb.set_trace()
     n, p = grid.shape
     env = poly.enveloppe
     idx = np.ones(shape=(n, ))
@@ -129,7 +125,6 @@ def main():
         poly_shape = pickle.load(poly_file)
     grid = setup_uniform_grid(poly_shape, 0.01)
     grid = keep_within_dem(grid)
-    import pdb; pdb.set_trace()
 
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
