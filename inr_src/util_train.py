@@ -166,14 +166,12 @@ def predict_loop(dataset, bs, model, device="cpu", verbose=True):
     range_ = range(0, n_data, bs)
     train_iterator = tqdm(range_) if verbose else range_
     preds = []
-    import pdb; pdb.set_trace()
     with torch.no_grad():
         for i in train_iterator:
             idx = batch_idx[i : (i + bs)]
             samples = dataset[idx]
             if dataset.need_target:
                 samples = samples[0]
-            
             pred = model(samples)
             preds.append(pred)
     preds = torch.cat(preds)

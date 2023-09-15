@@ -97,11 +97,10 @@ def main():
     
     args = parser_f()
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
-    import pdb; pdb.set_trace()
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=True)
-
-    idx = np.where(prediction > 0)[0]
+    import pdb; pdb.set_trace()
+    idx = np.where(prediction.numpy() > 0)[0]
     error = xytz.targets[idx] - prediction[idx]
 
     s = model_hp.nv_target[0,1]
