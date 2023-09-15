@@ -46,7 +46,7 @@ def load_data_model(npz_file, weights, config):
     model_hp = inr.util_train.clean_hp(model_hp)
 
     # load data
-    import pdb; pdb.set_trace()
+
     data_path = f"{config.dataset_folder}{config.dataset[0]}.npy"
     coherence_path = data_path.replace("data.npy", "coherence.npy")
     # coherence_option = coherence_path if model_hp.coherence else None
@@ -60,7 +60,7 @@ def load_data_model(npz_file, weights, config):
             train_fraction=0.0,
             seed=42,
             pred_type="pc",
-            nv_samples=tuple(model_hp.nv_samples),
+            nv_samples=tuple(model_hp.nv),
             nv_targets=tuple(model_hp.nv_target),
             normalise_targets=model_hp.normalise_targets,
             temporal=model_hp.nv.shape[0] == 3,
