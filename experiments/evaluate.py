@@ -57,7 +57,7 @@ def load_data_model(npz_file, weights, args):
     coherence_option =  None
     dem_path = data_path.replace("data.npy", "swath.npy")
     swath_path = f"{args.datafolder}/{args.config.dem_path}"
-
+    import pdb; pdb.set_trace()
     xytz_ds = inr.XYTZ(
             data_path,
             train_fold=False,
