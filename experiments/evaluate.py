@@ -100,11 +100,13 @@ def main():
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=True)
+    gt = xytz.targets
 
     if gpu:
         prediction = prediction.cpu()
+        gt = gt.cpu()
     idx = np.where(prediction.numpy() > 0)[0]
-    error = xytz.targets[idx] - prediction[idx]
+    error = gt[idx] - prediction[idx]
 
     s = model_hp.nv_target[0,1]
     mse_norm = ((error ** 2).mean() ** 0.5) * s
