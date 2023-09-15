@@ -79,8 +79,8 @@ class XYTZ(Dataset):
             if self.need_weights:
                 weights = weights[idx]
 
-        elif pred_type == "grid":
-            samples = self.setup_uniform_grid(pc, time)
+        elif pred_type == "raw":
+            samples = path
 
         if self.need_dem and temporal:
             dem_xyt = np.concatenate([dem_xyt, np.zeros((dem_xyt.shape[0],1))], axis=1)

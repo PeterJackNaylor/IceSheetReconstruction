@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 import argparse
+import pickle 
 
 import inr_src as inr
 
@@ -92,12 +93,44 @@ def load_data_model(npz_file, weights, args):
 
     return xytz_ds, model, coherence, opt, model_hp
 
+def setup_uniform_grid(pc, step):
 
+    xmax = pc[:,0].max()
+    xmin = pc[:,0].min()
+
+    ymax = pc[:,1].max()
+    ymin = pc[:,1].min()
+
+    xx, yy = np.meshgrid(
+        np.arange(xmin, xmax, step),
+        np.arange(ymin, ymax, step),
+    )
+    xx = xx.astype(float)
+    yy = yy.astype(float)
+    samples = np.vstack([xx.ravel(), yy.ravel()]).T
+    return samples
+
+def keep_within_dem(grid, poly):
+    n, p = grid.shape
+    env = poly.enveloppe
+    idx = np.ones(shape=(n, ))
+    for i in range(n):
+        if grid[i, :] not in env:
+            idx[i] = 0
+    return grid[idx]
 # Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
 
 def main():
     
     args = parser_f()
+
+
+    with open('./envelop_peterglacier.pickle', 'rb') as poly_file:
+        poly_shape = pickle.load(poly_file)
+    grid = setup_uniform_grid(poly_shape)
+    grid = keep_within_dem(grid)
+    import pdb; pdb.set_trace()
+
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=True)
@@ -121,6 +154,8 @@ def main():
     quantiles = [0.25, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 
     print(err_describe.describe(percentiles=quantiles))
+
+    
     import pdb; pdb.set_trace()
     
 
