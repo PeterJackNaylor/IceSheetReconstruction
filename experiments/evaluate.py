@@ -107,20 +107,21 @@ def main():
         prediction = prediction.cpu()
         gt = gt.cpu()
     idx = np.where(prediction.numpy() > 0)[0]
-    error = gt[idx] - prediction[idx]
+    error = gt[idx, 0] - prediction[idx, 0]
+    sample_weights = coherence[idx]
 
     s = model_hp.nv_target[0,1]
-    import pdb; pdb.set_trace()
     mse_norm = ((error ** 2).mean() ** 0.5) * s
     mae_norm = error.abs().mean() * s
 
-    mse_norm_coh = (((error * coherence) ** 2).mean() ** 0.5) * s
-    mae_norm_coh = (error * coherence).abs().mean() * s
+    mse_norm_coh = (((error * sample_weights) ** 2).mean() ** 0.5) * s
+    mae_norm_coh = (error * sample_weights).abs().mean() * s
 
     err_describe = pd.DataFrame(error.numpy())
     quantiles = [0.25, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 
     print(err_describe.describe(percentiles=quantiles))
+    import pdb; pdb.set_trace()
     
 
 
