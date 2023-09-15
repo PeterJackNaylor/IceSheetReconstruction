@@ -99,7 +99,7 @@ def main():
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
     import pdb; pdb.set_trace()
 
-    prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=False)
+    prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=True)
 
     idx = np.where(prediction > 0)[0]
     error = xytz.targets[idx] - prediction[idx]
