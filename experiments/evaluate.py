@@ -124,7 +124,7 @@ def main():
     with open('./envelop_peterglacier.pickle', 'rb') as poly_file:
         poly_shape = pickle.load(poly_file)
     grid = setup_uniform_grid(poly_shape, 0.01)
-    grid = keep_within_dem(grid)
+    grid = keep_within_dem(grid, poly_shape)
 
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
