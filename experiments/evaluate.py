@@ -100,7 +100,7 @@ def load_data_model(npz_file, weights, args):
     return xytz_ds, model, coherence, opt, model_hp
 
 def setup_uniform_grid(pc, step):
-    xmin, ymin, xmax, ymax = pc.bounds
+    ymin, xmin, ymax, xmax = pc.bounds
 
     xx, yy = np.meshgrid(
         np.arange(xmin, xmax, step),
