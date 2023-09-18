@@ -111,7 +111,7 @@ def keep_within_dem(grid, poly):
     env = poly.enveloppe
     idx = np.ones(shape=(n, ))
     for i in range(n):
-        if grid[i, :] not in env:
+        if poly.contains(grid[i, :]):
             idx[i] = 0
     return grid[idx]
 # Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
