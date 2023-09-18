@@ -5,7 +5,6 @@ import pandas as pd
 from torch.utils.data import Dataset
 
 def split_train(n, seed, train_fraction, train, swath_path=None):
-    import pdb; pdb.set_trace()
     if swath_path is not None:
         swath_id = np.load(swath_path)
         n_swath = swath_id.max()
@@ -69,6 +68,7 @@ class XYTZ(Dataset):
                 dem_w = np.ones_like(dem_targets[:,0]) * dem_coherence
         
         ### SETUP PC
+        import pdb; pdb.set_trace()
         if pred_type == "pc":
             pc = np.load(path)
             samples, targets = self.setup_data(pc)
