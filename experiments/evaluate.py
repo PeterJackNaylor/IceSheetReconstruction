@@ -119,10 +119,10 @@ def setup_uniform_grid(pc, step):
 
 def keep_within_dem(grid, poly):
     n, p = grid.shape
-    idx = np.ones(shape=(n, ), dtype=bool)
+    idx = np.zeros(shape=(n, ), dtype=bool)
     for i in range(n):
         if poly.contains(Point(grid[i, ::-1])):
-            idx[i] = False
+            idx[i] = True
     return grid[idx]
 # Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
 
@@ -178,7 +178,7 @@ def main():
     prediction_t = time_prediction(grid, model, model_hp, time)
 
 
-    std_map = np.std(prediction_t, axis=1)
+    std_map = np.std(prediction_t * s, axis=1)
     mean_t = std_map.mean()
     std_t = std_map.std()
 
