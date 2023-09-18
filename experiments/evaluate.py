@@ -117,9 +117,40 @@ def keep_within_dem(grid, poly):
     for i in range(n):
         if poly.contains(Point(grid[i, :])):
             idx[i] = False
-    import pdb; pdb.set_trace()
     return grid[idx]
 # Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
+
+def time_prediction(grid, model, model_hp, time):
+    import pdb; pdb.set_trace()
+
+    xytz_ds = inr.XYTZ(
+            grid,
+            train_fold=False,
+            train_fraction=0.0,
+            seed=42,
+            pred_type="raw",
+            nv_samples=tuple(model_hp.nv),
+            nv_targets=tuple(model_hp.nv_target),
+            normalise_targets=model_hp.normalise_targets,
+            temporal=model_hp.nv.shape[0] == 3,
+            gpu=gpu
+        )
+    
+    start_date = pd.to_datetime(time[0]).replace(hour=12, minute=0, second=0, microsecond=0)
+    end_date = pd.to_datetime(time[1]).replace(hour=12, minute=0, second=0, microsecond=0)
+
+    date_range = pd.date_range(start=start_date, end=end_date, freq='1D')#freq='12H') #
+    predictions = []
+    for t in date_range:#
+        t_int = t.value / 1e9
+        xytz_ds.samples[:,-1] = (t_int - model_hp.nv[-1,0]) / model_hp.nv[-1,1]
+        prediction = inr.predict_loop(xytz_ds, 2048, model, device=tdevice, verbose=True)
+        if gpu:
+            prediction = prediction.cpu()
+        prediction = prediction.numpy()
+        predictions.append(prediction)
+    prediction = np.concatenate(predictions)
+    return prediction
 
 def main():
     
@@ -130,12 +161,13 @@ def main():
         poly_shape = pickle.load(poly_file)
     grid = setup_uniform_grid(poly_shape, args.step)
     grid = keep_within_dem(grid, poly_shape)
-    import pdb; pdb.set_trace()
 
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
     prediction = inr.predict_loop(xytz, 2048, model, device=tdevice, verbose=True)
     gt = xytz.targets
+    time = [xytz.samples[:, -1].min(), xytz.samples[:, -1].max()]
+    prediction_t = time_prediction(grid, model, model_hp, time)
 
     if gpu:
         prediction = prediction.cpu()
