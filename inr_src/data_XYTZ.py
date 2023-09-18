@@ -81,6 +81,8 @@ class XYTZ(Dataset):
 
         elif pred_type == "raw":
             samples = path
+            if temporal:
+                samples = np.concatenate([samples, np.zeros((dem_xyt.shape[0],1))], axis=1)
 
         if self.need_dem and temporal:
             dem_xyt = np.concatenate([dem_xyt, np.zeros((dem_xyt.shape[0],1))], axis=1)
