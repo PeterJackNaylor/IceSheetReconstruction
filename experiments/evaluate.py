@@ -82,7 +82,7 @@ def load_data_model(npz_file, weights, args):
             swath_path=swath_path,
             gpu=gpu
         )
-
+    import numpy as np
     coherence = np.load(coherence_path)
 
     model = inr.ReturnModel(
