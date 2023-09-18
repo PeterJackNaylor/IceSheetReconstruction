@@ -179,6 +179,7 @@ def main():
     if gpu:
         prediction = prediction.cpu()
         gt = gt.cpu()
+    import pdb; pdb.set_trace()
     error = gt[:, 0] - prediction[:, 0]
     sample_weights = coherence.copy()
 
