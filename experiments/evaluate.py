@@ -213,10 +213,10 @@ def main():
     values += errors_q
     results = pd.DataFrame(values, columns=[opt.name], index=names)
     results.to_csv(f"{opt.name}_results.csv")
-    import pdb; pdb.set_trace()
+
 
     if args.plot:
-        for t in prediction_t.shape[1]:
+        for t in range(prediction_t.shape[1]):
             fig = plt.figure(figsize=(12,7))
             ax = fig.add_subplot()
             img = ax.scatter(grid[:,0], grid[:,1], c=prediction_t[:,t] * s + model_hp.nv_target[0,0], cmap=plt.jet())
