@@ -121,7 +121,6 @@ def keep_within_dem(grid, poly):
 # Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
 
 def time_prediction(grid, model, model_hp, time):
-    import pdb; pdb.set_trace()
 
     xytz_ds = inr.XYTZ(
             grid,
@@ -151,11 +150,12 @@ def time_prediction(grid, model, model_hp, time):
             prediction = prediction.cpu()
         prediction = prediction.numpy()
         predictions.append(prediction)
-    prediction = np.concatenate(predictions)
+    import pdb; pdb.set_trace()
+    prediction = np.concatenate(predictions, axis=0)
     return prediction
 
 def main():
-    
+
     args = parser_f()
 
 
