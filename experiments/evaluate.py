@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 import argparse
 import pickle 
+from shapely.geometry import Point
 
 import inr_src as inr
 
@@ -34,6 +35,11 @@ def parser_f():
         "--datafolder",
         type=str,
         default=None,
+    )
+    parser.add_argument(
+        "--step",
+        type=float,
+        default=0.01,
     )
     args = parser.parse_args()
     args.config = inr.read_yaml(args.config)
@@ -106,12 +112,10 @@ def setup_uniform_grid(pc, step):
     return samples
 
 def keep_within_dem(grid, poly):
-    import pdb; pdb.set_trace()
     n, p = grid.shape
-    env = poly.enveloppe
     idx = np.ones(shape=(n, ))
     for i in range(n):
-        if poly.contains(grid[i, :]):
+        if poly.contains(Point(grid[i, :])):
             idx[i] = 0
     return grid[idx]
 # Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
@@ -123,8 +127,9 @@ def main():
 
     with open('./envelop_peterglacier.pickle', 'rb') as poly_file:
         poly_shape = pickle.load(poly_file)
-    grid = setup_uniform_grid(poly_shape, 0.01)
+    grid = setup_uniform_grid(poly_shape, args.step)
     grid = keep_within_dem(grid, poly_shape)
+    import pdb; pdb.set_trace()
 
     xytz, model, coherence, opt, model_hp = load_data_model(args.model_param, args.model_weights, args)
 
