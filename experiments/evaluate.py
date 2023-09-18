@@ -144,9 +144,8 @@ def time_prediction(grid, model, model_hp, time):
     time[0] = np.ceil(time[0])
     time[1] = np.floor(time[1])
     predictions = []
-    for t in range(time[0], time[1]):#
-        t_int = t.value / 1e9
-        xytz_ds.samples[:,-1] = (t_int - model_hp.nv[-1,0]) / model_hp.nv[-1,1]
+    for t in range(int(time[0]), int(time[1]):#
+        xytz_ds.samples[:,-1] = (t - model_hp.nv[-1,0]) / model_hp.nv[-1,1]
         prediction = inr.predict_loop(xytz_ds, 2048, model, device=tdevice, verbose=True)
         if gpu:
             prediction = prediction.cpu()
