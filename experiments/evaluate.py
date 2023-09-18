@@ -1,5 +1,6 @@
 
 import os
+import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 import torch
@@ -41,6 +42,11 @@ def parser_f():
         type=float,
         default=0.01,
     )
+    parser.add_argument('--plot',
+                        dest='plot',
+                        action='store_true')
+    parser.set_defaults(plot=False)
+
     args = parser.parse_args()
     args.config = inr.read_yaml(args.config)
 
@@ -82,7 +88,7 @@ def load_data_model(npz_file, weights, args):
             swath_path=swath_path,
             gpu=gpu
         )
-    import pdb; pdb.set_trace()
+
     coherence = np.load(coherence_path)
 
     model = inr.ReturnModel(
@@ -194,7 +200,7 @@ def main():
     mse_norm_f = ((error_c ** 2).mean() ** 0.5) * s
     mae_norm_f = error_c.abs().mean() * s
 
-    err_describe = pd.DataFrame(error.abs().numpy())
+    err_describe = pd.DataFrame((error.abs().numpy() * s))
     quantiles = [0.25, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 
     errors_q = list(err_describe.describe(percentiles=quantiles).values[4:-1,0])
@@ -205,8 +211,17 @@ def main():
     values = [mse_norm, mae_norm, mse_norm_coh, mae_norm_coh, mse_norm_f, mae_norm_f, mean_t, std_t]
     values = [float(t) for t in values]
     values += errors_q
+    results = pd.DataFrame(values, columns=[opt.name], index=names)
+    results.to_csv(f"{opt.name}_results.csv")
     import pdb; pdb.set_trace()
-    
 
+    if args.plot:
+        for t in prediction_t.shape[1]:
+            fig = plt.figure(figsize=(12,7))
+            ax = fig.add_subplot()
+            img = ax.scatter(grid[:,0], grid[:,1], c=prediction_t[:,t] * s + model_hp.nv_target[0,0], cmap=plt.jet())
+            fig.colorbar(img)
+            plt.savefig(f"{opt.name}_{t}.png")    
+            plt.close()
 if __name__ == "__main__":
     main()
