@@ -171,8 +171,11 @@ def main():
     time = [xytz.samples[:, -1].min(), xytz.samples[:, -1].max()]
     prediction_t = time_prediction(grid, model, model_hp, time)
 
-    import pdb; pdb.set_trace()
-    np.mean(np.std(prediction_t, axis=1))
+
+    std_map = np.std(prediction_t, axis=1)
+    mean_t = std_map.mean()
+    std_t = std_map.std()
+
     if gpu:
         prediction = prediction.cpu()
         gt = gt.cpu()
@@ -187,15 +190,31 @@ def main():
     mse_norm_coh = (((error * sample_weights) ** 2).mean() ** 0.5) * s
     mae_norm_coh = (error * sample_weights).abs().mean() * s
 
+    idx_c = np.where(coherence > 0.8)[0]
+    error_c = gt[idx_c, 0] - prediction[idx_c, 0]
+    mse_norm_f = ((error_c ** 2).mean() ** 0.5) * s
+    mae_norm_f = error_c.abs().mean() * s
+
     err_describe = pd.DataFrame(error.numpy())
     quantiles = [0.25, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 
     print(err_describe.describe(percentiles=quantiles))
 
-    
+    # metrics
+    names = ["L2", "L1", "L2_w_coherence", "L1_w_coherence", "L2_f_coherence", "L1_f_coherence", "mean_t", "std_t"]
+    names += [f"Q({q})" for q in quantiles]
+    values = [mse_norm, mae_norm, mse_norm_coh, mae_norm_coh, mse_norm_f, mae_norm_f, mean_t, std_t]
     import pdb; pdb.set_trace()
     
 
+fig = plt.figure(figsize=(12,7))
+ax = fig.add_subplot()
+img = ax.scatter(xs, ys, c=t_low, cmap=plt.hot())
+fig.colorbar(img)
 
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+
+plt.show()
 if __name__ == "__main__":
     main()
