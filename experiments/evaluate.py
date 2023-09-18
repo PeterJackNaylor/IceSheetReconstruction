@@ -136,6 +136,12 @@ def time_prediction(grid, model, model_hp, time):
             gpu=gpu
         )
     
+    if gpu:
+        time[0] = time[0].cpu()
+        time[1] = time[1].cpu()
+    time[0] = time[0] * model_hp.nv[-1,1] + model_hp.nv[-1,0]
+    time[1] = time[1] * model_hp.nv[-1,1] + model_hp.nv[-1,0]
+    
     start_date = pd.to_datetime(time[0]).replace(hour=12, minute=0, second=0, microsecond=0)
     end_date = pd.to_datetime(time[1]).replace(hour=12, minute=0, second=0, microsecond=0)
 
