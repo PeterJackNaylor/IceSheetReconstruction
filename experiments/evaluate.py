@@ -207,14 +207,5 @@ def main():
     import pdb; pdb.set_trace()
     
 
-fig = plt.figure(figsize=(12,7))
-ax = fig.add_subplot()
-img = ax.scatter(xs, ys, c=t_low, cmap=plt.hot())
-fig.colorbar(img)
-
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-
-plt.show()
 if __name__ == "__main__":
     main()
