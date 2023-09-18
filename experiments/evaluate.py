@@ -150,8 +150,8 @@ def time_prediction(grid, model, model_hp, time):
             prediction = prediction.cpu()
         prediction = prediction.numpy()
         predictions.append(prediction)
-    import pdb; pdb.set_trace()
-    prediction = np.concatenate(predictions, axis=0)
+
+    prediction = np.concatenate(predictions, axis=1)
     return prediction
 
 def main():
@@ -171,6 +171,8 @@ def main():
     time = [xytz.samples[:, -1].min(), xytz.samples[:, -1].max()]
     prediction_t = time_prediction(grid, model, model_hp, time)
 
+    import pdb; pdb.set_trace()
+    np.mean(np.std(prediction_t, axis=1))
     if gpu:
         prediction = prediction.cpu()
         gt = gt.cpu()
