@@ -139,15 +139,12 @@ def time_prediction(grid, model, model_hp, time):
     if gpu:
         time[0] = time[0].cpu()
         time[1] = time[1].cpu()
-    time[0] = time[0] * model_hp.nv[-1,1] + model_hp.nv[-1,0]
-    time[1] = time[1] * model_hp.nv[-1,1] + model_hp.nv[-1,0]
-    
-    start_date = pd.to_datetime(time[0]).replace(hour=12, minute=0, second=0, microsecond=0)
-    end_date = pd.to_datetime(time[1]).replace(hour=12, minute=0, second=0, microsecond=0)
-
-    date_range = pd.date_range(start=start_date, end=end_date, freq='1D')#freq='12H') #
+    time[0] = time[0].numpy() * model_hp.nv[-1,1] + model_hp.nv[-1,0]
+    time[1] = time[1].numpy() * model_hp.nv[-1,1] + model_hp.nv[-1,0]
+    time[0] = np.ceil(time[0])
+    time[1] = np.floor(time[1])
     predictions = []
-    for t in date_range:#
+    for t in range(time[0], time[1]):#
         t_int = t.value / 1e9
         xytz_ds.samples[:,-1] = (t_int - model_hp.nv[-1,0]) / model_hp.nv[-1,1]
         prediction = inr.predict_loop(xytz_ds, 2048, model, device=tdevice, verbose=True)
