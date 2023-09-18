@@ -179,7 +179,6 @@ def main():
     if gpu:
         prediction = prediction.cpu()
         gt = gt.cpu()
-    import pdb; pdb.set_trace()
     error = gt[:, 0] - prediction[:, 0]
     sample_weights = coherence.copy()
 
@@ -190,21 +189,22 @@ def main():
     mse_norm_coh = (((error * sample_weights) ** 2).mean() ** 0.5) * s
     mae_norm_coh = (error * sample_weights).abs().mean() * s
 
-    import pdb; pdb.set_trace()
     idx_c = np.where(coherence > 0.8)[0]
     error_c = gt[idx_c, 0] - prediction[idx_c, 0]
     mse_norm_f = ((error_c ** 2).mean() ** 0.5) * s
     mae_norm_f = error_c.abs().mean() * s
 
-    err_describe = pd.DataFrame(error.numpy())
+    err_describe = pd.DataFrame(error.abs().numpy())
     quantiles = [0.25, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 
-    print(err_describe.describe(percentiles=quantiles))
+    errors_q = list(err_describe.describe(percentiles=quantiles).values[4:-1,0])
 
     # metrics
     names = ["L2", "L1", "L2_w_coherence", "L1_w_coherence", "L2_f_coherence", "L1_f_coherence", "mean_t", "std_t"]
     names += [f"Q({q})" for q in quantiles]
     values = [mse_norm, mae_norm, mse_norm_coh, mae_norm_coh, mse_norm_f, mae_norm_f, mean_t, std_t]
+    values = [float(t) for t in values]
+    values += errors_q
     import pdb; pdb.set_trace()
     
 
