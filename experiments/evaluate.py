@@ -120,9 +120,8 @@ def setup_uniform_grid(pc, step):
 def keep_within_dem(grid, poly):
     n, p = grid.shape
     idx = np.ones(shape=(n, ), dtype=bool)
-    import pdb; pdb.set_trace()
     for i in range(n):
-        if poly.contains(Point(grid[i, :])):
+        if poly.contains(Point(grid[i, ::-1])):
             idx[i] = False
     return grid[idx]
 # Thins we wish to report: L1 error, L2 error, L2 weighted_coherence, avg absolute daily difference, error quartiles?
