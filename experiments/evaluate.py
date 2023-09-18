@@ -120,6 +120,7 @@ def setup_uniform_grid(pc, step):
 def keep_within_dem(grid, poly):
     n, p = grid.shape
     idx = np.ones(shape=(n, ), dtype=bool)
+    import pdb; pdb.set_trace()
     for i in range(n):
         if poly.contains(Point(grid[i, :])):
             idx[i] = False
