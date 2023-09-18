@@ -44,7 +44,7 @@ class XYTZ(Dataset):
         dem_freq="M",
         gpu=False
     ):
-        self.need_target = not pred_type == "grid"
+        self.need_target = not pred_type == "raw"
         self.nv_samples = nv_samples
         self.input_size = 3 if temporal else 2
         self.step_grid = step_grid
