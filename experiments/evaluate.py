@@ -177,6 +177,7 @@ def main():
     time = [xytz.samples[:, -1].min(), xytz.samples[:, -1].max()]
     prediction_t = time_prediction(grid, model, model_hp, time)
 
+    s = model_hp.nv_target[0,1]
 
     std_map = np.std(prediction_t * s, axis=1)
     mean_t = std_map.mean()
@@ -188,7 +189,6 @@ def main():
     error = gt[:, 0] - prediction[:, 0]
     sample_weights = coherence.copy()
 
-    s = model_hp.nv_target[0,1]
     mse_norm = ((error ** 2).mean() ** 0.5) * s
     mae_norm = error.abs().mean() * s
 
