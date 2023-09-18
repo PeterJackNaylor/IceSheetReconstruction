@@ -179,9 +179,8 @@ def main():
     if gpu:
         prediction = prediction.cpu()
         gt = gt.cpu()
-    idx = np.where(prediction.numpy() > 0)[0]
-    error = gt[idx, 0] - prediction[idx, 0]
-    sample_weights = coherence[idx]
+    error = gt[:, 0] - prediction[:, 0]
+    sample_weights = coherence.copy()
 
     s = model_hp.nv_target[0,1]
     mse_norm = ((error ** 2).mean() ** 0.5) * s
@@ -190,6 +189,7 @@ def main():
     mse_norm_coh = (((error * sample_weights) ** 2).mean() ** 0.5) * s
     mae_norm_coh = (error * sample_weights).abs().mean() * s
 
+    import pdb; pdb.set_trace()
     idx_c = np.where(coherence > 0.8)[0]
     error_c = gt[idx_c, 0] - prediction[idx_c, 0]
     mse_norm_f = ((error_c ** 2).mean() ** 0.5) * s
