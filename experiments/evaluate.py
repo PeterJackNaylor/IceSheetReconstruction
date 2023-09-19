@@ -38,6 +38,11 @@ def parser_f():
         default=None,
     )
     parser.add_argument(
+        "--support",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
         "--step",
         type=float,
         default=0.01,
@@ -165,7 +170,7 @@ def main():
     args = parser_f()
 
 
-    with open('./envelop_peterglacier.pickle', 'rb') as poly_file:
+    with open(args.support, 'rb') as poly_file:
         poly_shape = pickle.load(poly_file)
     grid = setup_uniform_grid(poly_shape, args.step)
     grid = keep_within_dem(grid, poly_shape)
@@ -223,5 +228,6 @@ def main():
             fig.colorbar(img)
             plt.savefig(f"{opt.name}_{t}.png")    
             plt.close()
+
 if __name__ == "__main__":
     main()

@@ -58,7 +58,7 @@ process INR {
 
 py_evaluate = file("experiments/evaluate.py")
 
-process group {
+process Evaluate {
     publishDir "nf_meta/", overwrite: true
 
     input:
@@ -77,9 +77,14 @@ process group {
         """
 }
 
+process Regroup {
+    
+}
+
 workflow {
 
     main:
         INR(ds, method, option)
-        group(INR.output, config)
+        Evaluate(INR.output, config)
+        Regroup(Evaluate.output.collect())
 }
