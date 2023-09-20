@@ -54,14 +54,14 @@ for f in files:
         normalised = "Yes"
         data_name = data_name.replace("_normalise", "")
 
-    temporal = model_hp.nv.shape[0] == 3
+    temporal = model_hp.nv_samples.shape[0] == 3
     xytz_ds = inr.XYTZ(
             path_f.format(data_name),
             train_fold=False,
             train_fraction=0.0,
             seed=42,
             pred_type="pc",
-            nv=tuple(model_hp.nv),
+            nv=tuple(model_hp.nv_samples),
             nv_targets=tuple(model_hp.nv_target),
             temporal=temporal,
             normalise_targets=model_hp.normalise_targets,
