@@ -153,23 +153,23 @@ class XYTZ(Dataset):
         elif freq == "Y":
             self.dem_repeats = nber_of_years
 
-    def normalize(self, vector, nv, include_last=True):
+    def normalize(self, vector, nv_samples, include_last=True):
         c = vector.shape[1]
-        if nv is None:
-            nv = []
+        if nv_samples is None:
+            nv_samples = []
             for i, vect in enumerate(vector.T):
                 if i == c - 1 and not include_last:
                     break
                 m = (vect.max() + vect.min()) / 2
                 s = (vect.max() - vect.min()) / 2
-                nv.append((m, s))
+                nv_samples.append((m, s))
                 
         for i in range(c):
             if i == c - 1 and not include_last:
                 break
-            vector[:, i] = (vector[:, i] - nv[i][0]) / nv[i][1]
+            vector[:, i] = (vector[:, i] - nv_samples[i][0]) / nv_samples[i][1]
 
-        return nv
+        return nv_samples
 
     def setup_uniform_grid(self, pc, time, temporal):
 
@@ -220,7 +220,7 @@ class XYTZ_grid(XYTZ):
     def __init__(self, grid, time, nv_samples=None, step_grid=1, temporal=False, gpu=False):
 
         self.need_target = False
-        self.nv = nv_samples
+        self.nv_samples = nv_samples
         self.input_size = 3
         self.step_grid = step_grid
         samples = self.setup_uniform_grid(grid, time, temporal=temporal)

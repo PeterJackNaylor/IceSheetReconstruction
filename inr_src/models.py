@@ -158,6 +158,9 @@ class SkipModel(Fmodel):
         elif id_ == "6":
             first = 256
             layer_size = [(first, 10), (128, 2), (64, 2)]
+        elif id_ == "7":
+            first = 512
+            layer_size = [(first, 20)]
 
         layers = []
         self.mlp_size0 = nn.Sequential(

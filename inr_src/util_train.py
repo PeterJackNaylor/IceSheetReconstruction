@@ -215,7 +215,7 @@ def continuous_diff(x, model):
 
     return dz_dxyt
 
-def tvn_loss(dataset, model, n_data, bs, device, 
+def compute_grad(dataset, model, n_data, bs, device, 
              input_size, mean_xyt, std_xyt):
     ## return tvn loss over space and time
     ind = torch.randint(
@@ -305,7 +305,7 @@ def estimate_density(
 
                 loss = lmse + lambda_l1 * lmae
                 if grad:
-                    dz_dxyt = tvn_loss(dataset, model, n_data, bs, 
+                    dz_dxyt = compute_grad(dataset, model, n_data, bs, 
                                        device, s, mean_xyt, std_xyt)
                     loss_xy = loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2])
                     loss += lambda_xy * loss_xy

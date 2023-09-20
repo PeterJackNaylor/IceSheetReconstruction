@@ -72,19 +72,20 @@ process Evaluate {
         """
         python $py_evaluate --model_param $npz \
                             --model_weights $weight \
-                            --config $config \ 
-                            --datafolder ${datafolder}
+                            --config ${config} \ 
+                            --datafolder ${datafolder} \
+                            --support ${datafolder}/${params.support}
         """
 }
 
-process Regroup {
+// process Regroup {
     
-}
+// }
 
 workflow {
 
     main:
         INR(ds, method, option)
         Evaluate(INR.output, config)
-        Regroup(Evaluate.output.collect())
+        // Regroup(Evaluate.output.collect())
 }
