@@ -38,18 +38,18 @@ xytz_ds = inr.XYTZ(
         train_fraction=0.0,
         seed=42,
         pred_type="pc",
-        nv=tuple(model_hp.nv),
+        nv=tuple(model_hp.nv_samples),
         nv_targets=tuple(model_hp.nv_target),
         normalise_targets=model_hp.normalise_targets,
-        temporal=model_hp.nv.shape[0] == 3,
+        temporal=model_hp.nv_samples.shape[0] == 3,
         gpu=gpu
     )
 ###
 pc = np.load(path)
 step_grid = 0.02
-XYT_xy = xytz_ds.samples * model_hp.nv[:,1] + model_hp.nv[:,0]
-dataset_t = inr.XYTZ_grid(XYT_xy, 0, nv=model_hp.nv, step_grid=step_grid, gpu=gpu, temporal=model_hp.nv.shape[0] == 3)
-grid_xy = (dataset_t.samples * model_hp.nv[:,1] + model_hp.nv[:,0]).numpy()
+XYT_xy = xytz_ds.samples * model_hp.nv_samples[:,1] + model_hp.nv_samples[:,0]
+dataset_t = inr.XYTZ_grid(XYT_xy, 0, nv_samples=model_hp.nv_samples, step_grid=step_grid, gpu=gpu, temporal=model_hp.nv_samples.shape[0] == 3)
+grid_xy = (dataset_t.samples * model_hp.nv_samples[:,1] + model_hp.nv_samples[:,0]).numpy()
 
 
 ###
@@ -96,7 +96,7 @@ grid = dataset_t
 
 for t in date_range:#
     t_int = t.value / 1e9
-    dataset_t.samples[:,-1] = (t_int - model_hp.nv[-1,0]) / model_hp.nv[-1,1]
+    dataset_t.samples[:,-1] = (t_int - model_hp.nv_samples[-1,0]) / model_hp.nv_samples[-1,1]
     # prediction = inr.predict_loop(dataset_t, 2048, model, device=device)
     prediction, gradient = inr.predict_loop_with_time_gradient(dataset_t, 2048, model, device=device)
     prediction = prediction * model_hp.nv_target[0,1] + model_hp.nv_target[0,0]
@@ -127,12 +127,12 @@ np.random.shuffle(rdm_idx)
 rdm_idx = rdm_idx[:int(3e5)]
 xytz_ds.samples = xytz_ds.samples[rdm_idx]
 
-XYT_xy = xytz_ds.samples * model_hp.nv[:,1] + model_hp.nv[:,0]
+XYT_xy = xytz_ds.samples * model_hp.nv_samples[:,1] + model_hp.nv_samples[:,0]
 
 for t in date_range:#
     t_int = t.value / 1e9
     date = t.strftime('%Y-%m-%d')
-    xytz_ds.samples[:,-1] = (t_int - model_hp.nv[-1,0]) / model_hp.nv[-1,1]
+    xytz_ds.samples[:,-1] = (t_int - model_hp.nv_samples[-1,0]) / model_hp.nv_samples[-1,1]
     prediction = inr.predict_loop(xytz_ds, 2048, model, device=device)
 
     prediction = prediction * model_hp.nv_target[0,1] + model_hp.nv_target[0,0]

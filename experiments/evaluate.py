@@ -84,10 +84,10 @@ def load_data_model(npz_file, weights, args):
             train_fraction=0.0,
             seed=42,
             pred_type="pc",
-            nv_samples=tuple(model_hp.nv),
+            nv_samples=tuple(model_hp.nv_samples),
             nv_targets=tuple(model_hp.nv_target),
             normalise_targets=model_hp.normalise_targets,
-            temporal=model_hp.nv.shape[0] == 3,
+            temporal=model_hp.nv_samples.shape[0] == 3,
             coherence_path=coherence_option,
             dem_path=dem_path,
             swath_path=swath_path,
@@ -139,23 +139,23 @@ def time_prediction(grid, model, model_hp, time):
             train_fraction=0.0,
             seed=42,
             pred_type="raw",
-            nv_samples=tuple(model_hp.nv),
+            nv_samples=tuple(model_hp.nv_samples),
             nv_targets=tuple(model_hp.nv_target),
             normalise_targets=model_hp.normalise_targets,
-            temporal=model_hp.nv.shape[0] == 3,
+            temporal=model_hp.nv_samples.shape[0] == 3,
             gpu=gpu
         )
     
     if gpu:
         time[0] = time[0].cpu()
         time[1] = time[1].cpu()
-    time[0] = time[0].numpy() * model_hp.nv[-1,1] + model_hp.nv[-1,0]
-    time[1] = time[1].numpy() * model_hp.nv[-1,1] + model_hp.nv[-1,0]
+    time[0] = time[0].numpy() * model_hp.nv_samples[-1,1] + model_hp.nv_samples[-1,0]
+    time[1] = time[1].numpy() * model_hp.nv_samples[-1,1] + model_hp.nv_samples[-1,0]
     time[0] = np.ceil(time[0])
     time[1] = np.floor(time[1])
     predictions = []
     for t in range(int(time[0]), int(time[1])):#
-        xytz_ds.samples[:,-1] = (t - model_hp.nv[-1,0]) / model_hp.nv[-1,1]
+        xytz_ds.samples[:,-1] = (t - model_hp.nv_samples[-1,0]) / model_hp.nv_samples[-1,1]
         prediction = inr.predict_loop(xytz_ds, 2048, model, device=tdevice, verbose=True)
         if gpu:
             prediction = prediction.cpu()
