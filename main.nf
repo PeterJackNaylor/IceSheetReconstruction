@@ -72,7 +72,7 @@ process Evaluate {
         """
         python $py_evaluate --model_param $npz \
                             --model_weights $weight \
-                            --config ${config} \ 
+                            --config ${config} \
                             --datafolder ${datafolder} \
                             --support ${datafolder}/${params.support}
         """
