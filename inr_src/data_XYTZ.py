@@ -212,7 +212,7 @@ class XYTZ(Dataset):
             target = self.targets[idx]
             if self.weights is not None:
                 weights = self.weights[idx]
-                return sample, weights, target
+                return sample, target, weights
             return sample, target
     
 
