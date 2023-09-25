@@ -18,7 +18,10 @@ process INR {
         tuple val(data), val(opt_2)
         each met
         each opt
-        
+        each coherence_opt
+        each swath_opt
+        each dem_opt
+
     output:
         path("${name}.pth")
         path("${name}.npz")
@@ -31,17 +34,17 @@ process INR {
             opt2 = "${opt_2}"
         }
         name = "${met}_${data}${opt}"
-        if (params.coherence == "On"){
+        if (coherence_opt == "On"){
             opt_coherence = " --coherence_path ${datafolder}/${data.replace('data', 'coherence')}.npy"
         }else{
             opt_coherence = ""
         }
-        if (params.swath == "On"){
+        if (swath_opt == "On"){
             opt_swath = " --swath_path ${datafolder}/${data.replace('data', 'swath')}.npy"
         }else{
             opt_swath = ""
         }
-        if (params.dem == "On"){
+        if (dem_opt == "On"){
             opt_dem = " --dem_path ${datafolder}/${params.dem_path}"
         }else{
             opt_dem = ""
@@ -85,7 +88,7 @@ process Evaluate {
 workflow {
 
     main:
-        INR(ds, method, option)
+        INR(ds, method, option, params.coherence, params.swath, params.dem)
         Evaluate(INR.output, config)
         // Regroup(Evaluate.output.collect())
 }

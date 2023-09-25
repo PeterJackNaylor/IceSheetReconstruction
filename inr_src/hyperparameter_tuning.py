@@ -52,9 +52,15 @@ def add_config_optuna_to_opt(opt, trial):
             opt.p.lambda_range[1],
             log=True,
         )
+    
     model_hp.lambda_xy = trial.suggest_float(
             "lambda_xy", opt.p.lambda_range[0], opt.p.lambda_range[1], log=True
     )
+
+    if opt.dem_path is not None:
+        model_hp.lambda_dem = trial.suggest_float(
+                "lambda_dem", opt.p.lambda_range[0], opt.p.lambda_range[1], log=True
+        )
 
     if model_hp.siren or model_hp.wires:
         model_hp.hidden_num = trial.suggest_int(

@@ -40,8 +40,6 @@ class XYTZ(Dataset):
         coherence_path=None,
         swath_path=None,
         dem_path=None,
-        dem_coherence=0.7,
-        dem_freq="M",
         gpu=False
     ):
         self.need_target = not pred_type == "raw"
@@ -61,11 +59,9 @@ class XYTZ(Dataset):
         self.need_dem = dem_path is not None
         if self.need_dem:
             dem = np.load(dem_path)
-            dem_xyt = dem[:, :2]
-            dem_targets = dem[:, 2:3]
+            dem_xy = dem[:, :2]
+            dem_z = dem[:, 2:3]
             self.dem_shape = dem.shape[0]
-            if self.need_weights:
-                dem_w = np.ones_like(dem_targets[:,0]) * dem_coherence
         
         ### SETUP PC
         if pred_type == "pc":
@@ -84,9 +80,9 @@ class XYTZ(Dataset):
             if temporal:
                 samples = np.concatenate([samples, np.zeros((samples.shape[0],1))], axis=1)
 
-        if self.need_dem and temporal:
-            dem_xyt = np.concatenate([dem_xyt, np.zeros((dem_xyt.shape[0],1))], axis=1)
-            self.setup_dem(samples[:,-1], freq=dem_freq)
+        # if self.need_dem and temporal:
+        #     dem_xyt = np.concatenate([dem_xyt, np.zeros((dem_xyt.shape[0],1))], axis=1)
+        #     self.setup_dem(samples[:,-1], freq=dem_freq)
         ### END SETUP PC
 
         ### NORMALISATION
@@ -96,7 +92,8 @@ class XYTZ(Dataset):
                 nv_targets = [(0, 1) for _ in range(targets.shape[1])]
             nv_targets = self.normalize(targets, nv_targets, True)
         if self.need_dem:
-            self.normalize(dem_xyt, nv_samples, True)
+            self.normalize(dem_xy, nv_samples, True)
+            self.normalize(dem_z, nv_targets, True)
         ### END NORMALISATION
 
 
@@ -108,20 +105,22 @@ class XYTZ(Dataset):
 
         if self.need_target:
             self.targets = torch.tensor(targets)
-            if self.need_dem:
-                dem_targets = torch.tensor(dem_targets)
-                self.targets = torch.cat([self.targets, dem_targets])
+            # if self.need_dem:
+            #     dem_targets = torch.tensor(dem_targets)
+            #     self.targets = torch.cat([self.targets, dem_targets])
 
-        if self.need_weights:
+        # if self.need_weights:
             
-            if self.need_dem:
-                dem_weights = torch.tensor(dem_w)
-                self.weights = torch.cat([self.weights, dem_weights])
+        #     if self.need_dem:
+        #         dem_weights = torch.tensor(dem_w)
+        #         self.weights = torch.cat([self.weights, dem_weights])
 
         if self.need_dem:
-            dem_xyt = torch.tensor(dem_xyt).float()
+            self.dem_xy = torch.tensor(dem_xy).float()
+            self.dem_z = torch.tensor(dem_z).float()
             self.time_samples = torch.tensor(np.unique(self.samples[:,-1])).float()
-            self.samples = torch.cat([self.samples, dem_xyt])
+            self.time_n = self.time_samples.shape[0]
+            # self.samples = torch.cat([self.samples, dem_xyt])
 
         if gpu:
             self.send_cuda()
@@ -140,18 +139,20 @@ class XYTZ(Dataset):
         if self.need_weights:
             self.weights = self.weights.to("cuda")
         if self.need_dem:
+            self.dem_xy = self.dem_xy.to("cuda")
+            self.dem_z = self.dem_z.to("cuda")
             self.time_samples = self.time_samples.to("cuda")
 
-    def setup_dem(self, time, freq="M"): # D -> Day, M -> Month, Y-> year
-        nber_of_days = time.max() - time.min()
-        nber_of_months = int(np.round(nber_of_days / 30))
-        nber_of_years = int(np.round(nber_of_days / 365))
-        if freq == "D":
-            self.dem_repeats = int(np.round(nber_of_days))
-        elif freq == "M":
-            self.dem_repeats = nber_of_months
-        elif freq == "Y":
-            self.dem_repeats = nber_of_years
+    # def setup_dem(self, time, freq="M"): # D -> Day, M -> Month, Y-> year
+    #     nber_of_days = time.max() - time.min()
+    #     nber_of_months = int(np.round(nber_of_days / 30))
+    #     nber_of_years = int(np.round(nber_of_days / 365))
+    #     if freq == "D":
+    #         self.dem_repeats = int(np.round(nber_of_days))
+    #     elif freq == "M":
+    #         self.dem_repeats = nber_of_months
+    #     elif freq == "Y":
+    #         self.dem_repeats = nber_of_years
 
     def normalize(self, vector, nv_samples, include_last=True):
         c = vector.shape[1]
@@ -196,7 +197,7 @@ class XYTZ(Dataset):
         return int(self.sample_size + self.dem_shape * self.dem_repeats)
 
     def __getitem__(self, idx):
-        if self.need_dem:
+        if False:
             idx_dem = idx > self.sample_size
             n_dem = idx_dem.sum()
             idx_0 = torch.remainder(idx[idx_dem] - self.sample_size, self.dem_shape)
