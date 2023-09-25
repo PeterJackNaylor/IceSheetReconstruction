@@ -233,6 +233,28 @@ def compute_grad(dataset, model, n_data, bs, device,
     dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
     return dz_dxyt
 
+def compute_dem_err(dataset, model, n_data, bs, device):
+    ## return tvn loss over space and time
+    ind = torch.randint(
+        0,
+        dataset.dem_n,
+        size=(bs,),
+        requires_grad=False,
+        device=device,
+    )
+    ind_t = torch.randint(
+        0,
+        dataset.time_n,
+        size=(bs,),
+        requires_grad=False,
+        device=device,
+    )
+    dem_xy = dataset.dem_xy[ind, :]
+    t = dataset.time_samples[ind_t, :]
+    sample_dem = torch.cat([dem_xy, t])
+    sample_dem.requires_grad_(False)
+    dem_z_hat = model(sample_dem)
+    return dataset.dem_z[ind, :], dem_z_hat
 
 def estimate_density(
     dataset,
@@ -261,8 +283,12 @@ def estimate_density(
     lambda_l1 = opt.lambda_l1
     lambda_t = opt.lambda_t
     lambda_xy = opt.lambda_xy
+    
+    dem = dataset.need_dem
+    if dem:
+        lambda_dem = opt.lambda_dem
     grad = not(lambda_t == lambda_xy == 0)
-    print(grad)
+
     loss_fn_t = RMSELoss() #mseloss
     loss_fn_l2 = RMSELossW() if weights else RMSELoss()
     loss_fn_l1 = L1LossW() if weights else L1Loss()
@@ -304,6 +330,11 @@ def estimate_density(
                 lmae = loss_fn_l1(target_pred, data_batch[1], sample_weights)
 
                 loss = lmse + lambda_l1 * lmae
+
+                if dem:
+                    dem_z, dem_z_hat = compute_dem_err(dataset, model, n_data, bs, device)
+                    l_dem = loss_fn_l2(dem_z_hat, dem_z)
+                    loss += lambda_dem * l_dem
                 if grad:
                     dz_dxyt = compute_grad(dataset, model, n_data, bs, 
                                        device, s, mean_xyt, std_xyt)
