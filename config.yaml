@@ -32,15 +32,15 @@ lambda_range_t: #log search # For both xy and t
   - 1.e-5 # min
   - 1.e+3 # max
 hidden_num: # log search for SIREN and WIRES
-  - 4
-  - 10
+  - 8
+  - 8
 hidden_dim: 
   - 7
-  - 12
+  - 7
 do_skip: [1]
 width_gaussion: # log search for WIRES only
   - 1
   - 4
 act: [tanh]
-arch: [skip-5, skip-6, skip-7] # log search for RFF only
+arch: [skip-5] #, skip-6, skip-7] # log search for RFF only
 verbose: 1
