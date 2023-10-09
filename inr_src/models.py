@@ -3,9 +3,10 @@ import torch
 from numpy import random, float32, sqrt
 import torch.nn.functional as F
 
+
 def gen_b(mapping, scale, input_size, gpu=False):
     shape = (mapping, input_size)
-    B =  torch.tensor(random.normal(size=shape).astype(float32))
+    B = torch.tensor(random.normal(size=shape).astype(float32))
     if gpu:
         B = B.to("cuda")
     return B * scale
@@ -140,7 +141,6 @@ class SkipModel(Fmodel):
         # else:
         #     self.first = nn.Identity()
 
-        
         input_size = self.fourier_size * 2
         if id_ == "1":
             first = 512
@@ -329,141 +329,175 @@ class SIREN(torch.nn.Module):
 
 
 class RealGaborLayer(nn.Module):
-    '''
-        Implicit representation with Gabor nonlinearity
-        
-        Inputs;
-            in_features: Input features
-            out_features; Output features
-            bias: if True, enable bias for the linear operation
-            is_first: Legacy SIREN parameter
-            omega_0: Legacy SIREN parameter
-            omega: Frequency of Gabor sinusoid term
-            scale: Scaling of Gabor Gaussian term
-    '''
-    
-    def __init__(self, in_features, out_features, bias=True,
-                 is_first=False, omega0=10.0, sigma0=10.0,
-                 trainable=False):
+    """
+    Implicit representation with Gabor nonlinearity
+
+    Inputs;
+        in_features: Input features
+        out_features; Output features
+        bias: if True, enable bias for the linear operation
+        is_first: Legacy SIREN parameter
+        omega_0: Legacy SIREN parameter
+        omega: Frequency of Gabor sinusoid term
+        scale: Scaling of Gabor Gaussian term
+    """
+
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        bias=True,
+        is_first=False,
+        omega0=10.0,
+        sigma0=10.0,
+        trainable=False,
+    ):
         super().__init__()
         self.omega_0 = omega0
         self.scale_0 = sigma0
         self.is_first = is_first
-        
+
         self.in_features = in_features
-        
+
         self.freqs = nn.Linear(in_features, out_features, bias=bias)
         self.scale = nn.Linear(in_features, out_features, bias=bias)
-        
+
     def forward(self, input):
         omega = self.omega_0 * self.freqs(input)
         scale = self.scale(input) * self.scale_0
-        
-        return torch.cos(omega)*torch.exp(-(scale**2))
+
+        return torch.cos(omega) * torch.exp(-(scale**2))
+
 
 class ComplexGaborLayer(nn.Module):
-    '''
-        Implicit representation with complex Gabor nonlinearity
-        
-        Inputs;
-            in_features: Input features
-            out_features; Output features
-            bias: if True, enable bias for the linear operation
-            is_first: Legacy SIREN parameter
-            omega_0: Legacy SIREN parameter
-            omega0: Frequency of Gabor sinusoid term
-            sigma0: Scaling of Gabor Gaussian term
-            trainable: If True, omega and sigma are trainable parameters
-    '''
-    
-    def __init__(self, in_features, out_features, bias=True,
-                 is_first=False, omega0=10.0, sigma0=40.0,
-                 trainable=False):
+    """
+    Implicit representation with complex Gabor nonlinearity
+
+    Inputs;
+        in_features: Input features
+        out_features; Output features
+        bias: if True, enable bias for the linear operation
+        is_first: Legacy SIREN parameter
+        omega_0: Legacy SIREN parameter
+        omega0: Frequency of Gabor sinusoid term
+        sigma0: Scaling of Gabor Gaussian term
+        trainable: If True, omega and sigma are trainable parameters
+    """
+
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        bias=True,
+        is_first=False,
+        omega0=10.0,
+        sigma0=40.0,
+        trainable=False,
+    ):
         super().__init__()
         self.omega_0 = omega0
         self.scale_0 = sigma0
         self.is_first = is_first
-        
+
         self.in_features = in_features
-        
+
         if self.is_first:
             dtype = torch.float
         else:
             dtype = torch.cfloat
-            
+
         # Set trainable parameters if they are to be simultaneously optimized
-        self.omega_0 = nn.Parameter(self.omega_0*torch.ones(1), trainable)
-        self.scale_0 = nn.Parameter(self.scale_0*torch.ones(1), trainable)
-        
-        self.linear = nn.Linear(in_features,
-                                out_features,
-                                bias=bias,
-                                dtype=dtype)
-    
+        self.omega_0 = nn.Parameter(self.omega_0 * torch.ones(1), trainable)
+        self.scale_0 = nn.Parameter(self.scale_0 * torch.ones(1), trainable)
+
+        self.linear = nn.Linear(in_features, out_features, bias=bias, dtype=dtype)
+
     def forward(self, input):
         lin = self.linear(input)
         omega = self.omega_0 * lin
         scale = self.scale_0 * lin
-        
-        return torch.exp(1j*omega - scale.abs().square())
-    
+
+        return torch.exp(1j * omega - scale.abs().square())
+
+
 class WIRES(nn.Module):
-    def __init__(self, in_features, hidden_features, 
-                 hidden_layers, 
-                 out_features, outermost_linear=True,
-                 first_omega_0=30, hidden_omega_0=30., scale=10.0,
-                 pos_encode=False, sidelength=512, fn_samples=None,
-                 use_nyquist=True):
+    def __init__(
+        self,
+        in_features,
+        hidden_features,
+        hidden_layers,
+        out_features,
+        outermost_linear=True,
+        first_omega_0=30,
+        hidden_omega_0=30.0,
+        scale=10.0,
+        pos_encode=False,
+        sidelength=512,
+        fn_samples=None,
+        use_nyquist=True,
+    ):
         super().__init__()
-        
+
         # All results in the paper were with the default complex 'gabor' nonlinearity
         self.nonlin = ComplexGaborLayer
-        
-        # Since complex numbers are two real numbers, reduce the number of 
+
+        # Since complex numbers are two real numbers, reduce the number of
         # hidden parameters by 2
-        hidden_features = int(hidden_features/1.41421356237) #squareroot(2)
+        hidden_features = int(hidden_features / 1.41421356237)  # squareroot(2)
         dtype = torch.cfloat
         self.complex = True
-        self.wavelet = 'gabor'    
-        
+        self.wavelet = "gabor"
+
         # Legacy parameter
         self.pos_encode = False
-            
+
         self.net = []
-        self.net.append(self.nonlin(in_features,
-                                    hidden_features, 
-                                    omega0=first_omega_0,
-                                    sigma0=scale,
-                                    is_first=True,
-                                    trainable=False))
+        self.net.append(
+            self.nonlin(
+                in_features,
+                hidden_features,
+                omega0=first_omega_0,
+                sigma0=scale,
+                is_first=True,
+                trainable=False,
+            )
+        )
 
         for i in range(hidden_layers):
-            self.net.append(self.nonlin(hidden_features,
-                                        hidden_features, 
-                                        omega0=hidden_omega_0,
-                                        sigma0=scale))
+            self.net.append(
+                self.nonlin(
+                    hidden_features,
+                    hidden_features,
+                    omega0=hidden_omega_0,
+                    sigma0=scale,
+                )
+            )
 
-        final_linear = nn.Linear(hidden_features,
-                                 out_features,
-                                 dtype=dtype)            
+        final_linear = nn.Linear(hidden_features, out_features, dtype=dtype)
         self.net.append(final_linear)
         self.last_idx = len(self.net)
         self.net = nn.Sequential(*self.net)
-    
+
     def forward(self, coords):
         output = self.net(coords)
-        if self.wavelet == 'gabor':
+        if self.wavelet == "gabor":
             return output.real
-         
+
         return output
 
 
 class WiresExt(torch.nn.Module):
     def __init__(self, in_dim, out_dim, args):
         super(WiresExt, self).__init__()
-        self.model = WIRES(in_dim, args.hidden_dim, args.hidden_num, 
-                    out_dim, first_omega_0=args.scale,
-                    hidden_omega_0=args.scale, scale=args.width_gaussian)
+        self.model = WIRES(
+            in_dim,
+            args.hidden_dim,
+            args.hidden_num,
+            out_dim,
+            first_omega_0=args.scale,
+            hidden_omega_0=args.scale,
+            scale=args.width_gaussian,
+        )
         # self.model = RFF(in_dim, out_dim, hidden_num, hidden_dim,
         # 'relu', feature_dim=1024, feature_scale=feature_scales[0] )
         if args.normalise_targets:
@@ -481,7 +515,7 @@ class WiresExt(torch.nn.Module):
                     x = layer(xin)
                 elif len(self.model.net) - 1 == i:
                     out = layer(x)
-                    if self.model.wavelet == 'gabor':
+                    if self.model.wavelet == "gabor":
                         out = out.real
                 else:
                     x = layer(x) + x if i % 2 == 1 else layer(x)

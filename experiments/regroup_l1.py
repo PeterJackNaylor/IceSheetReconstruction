@@ -16,7 +16,7 @@ idx = 0
 for f in files:
     npz = np.load(f)
     nv = npz["nv_target"]
-    score = npz["best_score"] * nv[0,1]
+    score = npz["best_score"] * nv[0, 1]
 
     opt = inr.AttrDict()
     opt.name = f.split(".")[0]
@@ -56,17 +56,17 @@ for f in files:
 
     temporal = model_hp.nv_samples.shape[0] == 3
     xytz_ds = inr.XYTZ(
-            path_f.format(data_name),
-            train_fold=False,
-            train_fraction=0.0,
-            seed=42,
-            pred_type="pc",
-            nv=tuple(model_hp.nv_samples),
-            nv_targets=tuple(model_hp.nv_target),
-            temporal=temporal,
-            normalise_targets=model_hp.normalise_targets,
-            gpu=gpu
-        )
+        path_f.format(data_name),
+        train_fold=False,
+        train_fraction=0.0,
+        seed=42,
+        pred_type="pc",
+        nv=tuple(model_hp.nv_samples),
+        nv_targets=tuple(model_hp.nv_target),
+        temporal=temporal,
+        normalise_targets=model_hp.normalise_targets,
+        gpu=gpu,
+    )
 
     prediction = inr.predict_loop(xytz_ds, 2048, model, device=device)
     model_hp.nv_target = np.array(model_hp.nv_target)
@@ -75,8 +75,8 @@ for f in files:
     if gpu:
         y_true = y_true.cpu()
         y_pred = y_pred.cpu()
-    mse = (mean_squared_error(y_true, y_pred) ** 0.5) * model_hp.nv_target[0,1]
-    mae = mean_absolute_error(y_true, y_pred) * model_hp.nv_target[0,1]
+    mse = (mean_squared_error(y_true, y_pred) ** 0.5) * model_hp.nv_target[0, 1]
+    mae = mean_absolute_error(y_true, y_pred) * model_hp.nv_target[0, 1]
     data_name = data_name.split("_")[0]
     if data_name == "test":
         data_name = "All"
@@ -88,14 +88,32 @@ for f in files:
     table.loc[idx, "L1_recomp"] = mae
     idx += 1
 
-pivot = pd.pivot_table(table, values='L1_recomp', index=['dataset', 'normalised'], columns=['method'], aggfunc=np.sum)
+pivot = pd.pivot_table(
+    table,
+    values="L1_recomp",
+    index=["dataset", "normalised"],
+    columns=["method"],
+    aggfunc=np.sum,
+)
 pivot.to_csv("aggreg_L1.csv", index=False)
 
-pivot2 = pd.pivot_table(table, values='L2_recomp', index=['dataset', 'normalised'], columns=['method'], aggfunc=np.sum)
+pivot2 = pd.pivot_table(
+    table,
+    values="L2_recomp",
+    index=["dataset", "normalised"],
+    columns=["method"],
+    aggfunc=np.sum,
+)
 pivot2.to_csv("aggreg_L2.csv", index=False)
 
 
-pivot2test = pd.pivot_table(table, values='L2', index=['dataset', 'normalised'], columns=['method'], aggfunc=np.sum)
+pivot2test = pd.pivot_table(
+    table,
+    values="L2",
+    index=["dataset", "normalised"],
+    columns=["method"],
+    aggfunc=np.sum,
+)
 pivot2test.to_csv("aggreg_L2_testset.csv", index=False)
-import pdb; pdb.set_trace()
+
 # Or if you prefer to load the model

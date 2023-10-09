@@ -4,6 +4,7 @@ from .training import train
 from .project_parser import AttrDict
 import numpy as np
 
+
 def add_config_optuna_to_opt(opt, trial):
     model_hp = AttrDict()
     model_hp.fourier = opt.fourier
@@ -41,25 +42,25 @@ def add_config_optuna_to_opt(opt, trial):
         model_hp.scale = int(2**scale_int)
 
     model_hp.lambda_t = trial.suggest_float(
-            "lambda_t",
-            opt.p.lambda_range_t[0],
-            opt.p.lambda_range_t[1],
-            log=True,
-        )
+        "lambda_t",
+        opt.p.lambda_range_t[0],
+        opt.p.lambda_range_t[1],
+        log=True,
+    )
     model_hp.lambda_l1 = trial.suggest_float(
-            "lambda_l1",
-            opt.p.lambda_range[0],
-            opt.p.lambda_range[1],
-            log=True,
-        )
-    
+        "lambda_l1",
+        opt.p.lambda_range[0],
+        opt.p.lambda_range[1],
+        log=True,
+    )
+
     model_hp.lambda_xy = trial.suggest_float(
-            "lambda_xy", opt.p.lambda_range[0], opt.p.lambda_range[1], log=True
+        "lambda_xy", opt.p.lambda_range[0], opt.p.lambda_range[1], log=True
     )
 
     if opt.dem_path is not None:
         model_hp.lambda_dem = trial.suggest_float(
-                "lambda_dem", opt.p.lambda_range[0], opt.p.lambda_range[1], log=True
+            "lambda_dem", opt.p.lambda_range[0], opt.p.lambda_range[1], log=True
         )
 
     if model_hp.siren or model_hp.wires:
@@ -89,7 +90,7 @@ def add_config_optuna_to_opt(opt, trial):
                 opt.p.width_gaussion[1],
                 log=True,
             )
-            model_hp.width_gaussian = 10 ** model_hp.width_gaussian_f
+            model_hp.width_gaussian = 10**model_hp.width_gaussian_f
             model_hp.architecture = "wires"
     else:
         model_hp.architecture = trial.suggest_categorical(
@@ -101,19 +102,11 @@ def add_config_optuna_to_opt(opt, trial):
 
 
 def objective(opt, trial):
-
     model_hp = add_config_optuna_to_opt(opt, trial)
     opt.tmp_name = opt.name + f"_trial_{trial.number}"
-    _, model_hp = train(
-        opt,
-        model_hp,
-        trial=trial,
-        return_model=True,
-        gpu=opt.gpu
-    )
+    _, model_hp = train(opt, model_hp, trial=trial, return_model=True, gpu=opt.gpu)
     del _
     torch.cuda.empty_cache()
-
 
     return model_hp.best_score
 
