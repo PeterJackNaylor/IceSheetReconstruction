@@ -139,6 +139,8 @@ class SkipModel(Fmodel):
         #     input_size = self.fourier_size * 2
         # else:
         #     self.first = nn.Identity()
+
+        
         input_size = self.fourier_size * 2
         if id_ == "1":
             first = 512
