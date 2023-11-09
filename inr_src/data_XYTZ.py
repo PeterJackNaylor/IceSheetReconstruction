@@ -4,6 +4,7 @@ import pandas as pd
 
 from torch.utils.data import Dataset
 
+
 def split_train(n, seed, train_fraction, train, swath_path=None):
     if swath_path is not None:
         swath_id = np.load(swath_path)
@@ -22,7 +23,8 @@ def split_train(n, seed, train_fraction, train, swath_path=None):
             np.random.shuffle(idx)
         n0 = int(n * train_fraction)
         idx = idx[:n0] if train else idx[n0:]
-    return idx 
+    return idx
+
 
 class XYTZ(Dataset):
     def __init__(
@@ -31,7 +33,7 @@ class XYTZ(Dataset):
         train_fold=False,
         train_fraction=0.8,
         seed=42,
-        pred_type="pc", # grid or pc
+        pred_type="pc",  # grid or pc
         step_grid=2.0,
         nv_samples=None,
         nv_targets=None,
@@ -40,7 +42,7 @@ class XYTZ(Dataset):
         coherence_path=None,
         swath_path=None,
         dem_path=None,
-        gpu=False
+        gpu=False,
     ):
         self.need_target = not pred_type == "raw"
         self.nv_samples = nv_samples
@@ -60,12 +62,18 @@ class XYTZ(Dataset):
             dem_xy = dem[:, :2]
             dem_z = dem[:, 2:3]
             self.dem_shape = dem.shape[0]
-        
+
         ### SETUP PC
         if pred_type == "pc":
             pc = np.load(path)
             samples, targets = self.setup_data(pc)
-            idx = split_train(samples.shape[0], seed, train_fraction, train_fold, swath_path=swath_path)
+            idx = split_train(
+                samples.shape[0],
+                seed,
+                train_fraction,
+                train_fold,
+                swath_path=swath_path,
+            )
             samples = samples[idx]
             if not temporal:
                 samples = samples[:, 0:2]
@@ -76,7 +84,9 @@ class XYTZ(Dataset):
         elif pred_type == "raw":
             samples = path
             if temporal:
-                samples = np.concatenate([samples, np.zeros((samples.shape[0],1))], axis=1)
+                samples = np.concatenate(
+                    [samples, np.zeros((samples.shape[0], 1))], axis=1
+                )
 
         # if self.need_dem and temporal:
         #     dem_xyt = np.concatenate([dem_xyt, np.zeros((dem_xyt.shape[0],1))], axis=1)
@@ -94,7 +104,6 @@ class XYTZ(Dataset):
             self.normalize(dem_z, nv_targets, True)
         ### END NORMALISATION
 
-
         ### TORCH SETUP
         self.samples = torch.tensor(samples).float()
         self.sample_size = self.samples.shape[0]
@@ -108,7 +117,7 @@ class XYTZ(Dataset):
             #     self.targets = torch.cat([self.targets, dem_targets])
 
         # if self.need_weights:
-            
+
         #     if self.need_dem:
         #         dem_weights = torch.tensor(dem_w)
         #         self.weights = torch.cat([self.weights, dem_weights])
@@ -116,7 +125,7 @@ class XYTZ(Dataset):
         if self.need_dem:
             self.dem_xy = torch.tensor(dem_xy).float()
             self.dem_z = torch.tensor(dem_z).float()
-            self.time_samples = torch.tensor(np.unique(self.samples[:,-1])).float()
+            self.time_samples = torch.tensor(np.unique(self.samples[:, -1])).float()
             self.time_n = self.time_samples.shape[0]
             # self.samples = torch.cat([self.samples, dem_xyt])
 
@@ -125,9 +134,9 @@ class XYTZ(Dataset):
         ### END TORCH SETUP
 
     def setup_data(self, pc):
-        sample_idx = np.array([0,1,-1])
-        samples = pc[:,sample_idx].astype(np.float32)
-        targets = pc[:,2:3].astype(np.float32)
+        sample_idx = np.array([0, 1, -1])
+        samples = pc[:, sample_idx].astype(np.float32)
+        targets = pc[:, 2:3].astype(np.float32)
         return samples, targets
 
     def send_cuda(self):
@@ -162,7 +171,7 @@ class XYTZ(Dataset):
                 m = (vect.max() + vect.min()) / 2
                 s = (vect.max() - vect.min()) / 2
                 nv_samples.append((m, s))
-                
+
         for i in range(c):
             if i == c - 1 and not include_last:
                 break
@@ -171,12 +180,11 @@ class XYTZ(Dataset):
         return nv_samples
 
     def setup_uniform_grid(self, pc, time, temporal):
+        xmax = pc[:, 0].max()
+        xmin = pc[:, 0].min()
 
-        xmax = pc[:,0].max()
-        xmin = pc[:,0].min()
-
-        ymax = pc[:,1].max()
-        ymin = pc[:,1].min()
+        ymax = pc[:, 1].max()
+        ymin = pc[:, 1].min()
 
         xx, yy = np.meshgrid(
             np.arange(xmin, xmax, self.step_grid),
@@ -214,11 +222,12 @@ class XYTZ(Dataset):
                 weights = self.weights[idx]
                 return sample, target, weights
             return sample, target
-    
+
 
 class XYTZ_grid(XYTZ):
-    def __init__(self, grid, time, nv_samples=None, step_grid=1, temporal=False, gpu=False):
-
+    def __init__(
+        self, grid, time, nv_samples=None, step_grid=1, temporal=False, gpu=False
+    ):
         self.need_target = False
         self.nv_samples = nv_samples
         self.input_size = 3
@@ -231,12 +240,7 @@ class XYTZ_grid(XYTZ):
             self.send_cuda()
 
 
-
-def return_dataset_prediction(
-    path,
-    nv_samples=None,
-    temporal=True
-):
+def return_dataset_prediction(path, nv_samples=None, temporal=True):
     xytz = XYTZ(
         path,
         pred_type="grid_predictions",
@@ -253,7 +257,7 @@ def return_dataset(
     dem=None,
     normalise_targets=True,
     temporal=True,
-    gpu=False
+    gpu=False,
 ):
     nv_targets = None
     xytz_train = XYTZ(
@@ -268,7 +272,7 @@ def return_dataset(
         coherence_path=coherence,
         dem_path=dem,
         swath_path=swath,
-        gpu=gpu
+        gpu=gpu,
     )
     nv_samples = xytz_train.nv_samples
     nv_targets = xytz_train.nv_targets
@@ -282,15 +286,15 @@ def return_dataset(
         nv_targets=nv_targets,
         temporal=temporal,
         swath_path=swath,
-        gpu=gpu
+        gpu=gpu,
     )
     return xytz_train, xytz_test, nv_samples, nv_targets
+
 
 def main():
     path = "./data/test_data.npy"
     ds, ds_test, nv, nv_y = return_dataset(path, gpu=False)
-    
-    import pdb; pdb.set_trace()
+
 
 if __name__ == "__main__":
     main()

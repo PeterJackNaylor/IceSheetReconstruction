@@ -11,11 +11,7 @@ def add_options(hp, opti):
     hp.temporal = opti.temporal
     return hp
 
-    
-
-
 def train(opt, model_hp, trial=None, return_model=True, gpu=False):
-
     train, test, nv_samples, nv_target = return_dataset(
         opt.path,
         coherence=opt.coherence_path,
@@ -23,7 +19,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         dem=opt.dem_path,
         normalise_targets=opt.normalise_targets,
         temporal=opt.temporal,
-        gpu=gpu
+        gpu=gpu,
     )
     model_hp.input_size = train.input_size
     model_hp.output_size = len(nv_target)
@@ -33,10 +29,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
 
     if model_hp.fourier:
         model_hp.B = gen_b(
-            model_hp.mapping_size,
-            model_hp.scale,
-            model_hp.input_size,
-            gpu=gpu
+            model_hp.mapping_size, model_hp.scale, model_hp.input_size, gpu=gpu
         )
 
     model = ReturnModel(
@@ -50,7 +43,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
 
     weights = opt.coherence_path is not None
     file_name = opt.tmp_name if hasattr(opt, "tmp_name") else opt.name
-        
+
     outputs = estimate_density(
         train,
         test,
@@ -61,9 +54,9 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
         trial=trial,
         return_model=return_model,
         temporal=opt.temporal,
-        gpu=gpu
+        gpu=gpu,
     )
-    
+
     if "B" in model_hp.keys():
         model_hp.B = np.array(model_hp.B.cpu())
     if return_model:
@@ -75,9 +68,9 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     model_hp = add_options(model_hp, opt)
     if return_model:
         np.savez(
-                file_name + ".npz",
-                **model_hp,
-            )
+            file_name + ".npz",
+            **model_hp,
+        )
         return model, model_hp
     else:
         return model_hp

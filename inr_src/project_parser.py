@@ -15,7 +15,6 @@ def read_yaml(path):
 
 
 def parser_f():
-
     parser = argparse.ArgumentParser(
         description="Train supervised NN on cell",
     )
@@ -89,12 +88,8 @@ def parser_f():
     )
     parser.set_defaults(normalise_targets=False)
 
-    parser.add_argument('--time',
-                        dest='temporal',
-                        action='store_true')
-    parser.add_argument('--no-time',
-                        dest='temporal',
-                        action='store_false')
+    parser.add_argument("--time", dest="temporal", action="store_true")
+    parser.add_argument("--no-time", dest="temporal", action="store_false")
     parser.set_defaults(temporal=False)
 
     parser.add_argument(

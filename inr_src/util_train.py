@@ -3,48 +3,57 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm, trange
 import optuna
+
 # from torchlars import LARS
 from .LARC import LARC
 from .diff_operators import jacobian, gradient, divergence
+
 # from tqdm.notebook import tqdm
 import time
-# I added the time so that if gpu not one, and an epoch is more than 30 mins, cut! ^^
+
+# I added the time so that if gpu not one, and
+#  an epoch is more than 30 mins, cut! ^^
+
 
 class RMSELoss(nn.Module):
     def __init__(self, eps=1e-6):
         super().__init__()
         self.mse = nn.MSELoss()
         self.eps = eps
-        
+
     def forward(self, yhat, y, weight=None):
-        loss = torch.sqrt(self.mse(yhat,y) + self.eps)
+        loss = torch.sqrt(self.mse(yhat, y) + self.eps)
         return loss
+
 
 class RMSELossW(nn.Module):
     def __init__(self, eps=1e-6):
         super().__init__()
         self.eps = eps
-        
+
     def forward(self, yhat, y, weights):
-        loss = torch.sqrt((weights * (yhat - y) **2 ).mean()  + self.eps)
+        loss = torch.sqrt((weights * (yhat - y) ** 2).mean() + self.eps)
         return loss
+
 
 class L1Loss(nn.Module):
     def __init__(self):
         super().__init__()
         self.mae = nn.L1Loss()
-        
+
     def forward(self, yhat, y, weights=None):
         loss = self.mae(yhat, y)
         return loss
 
+
 class L1LossW(nn.Module):
     def __init__(self):
         super().__init__()
-        
+
     def forward(self, yhat, y, weights):
         loss = (weights * torch.abs(yhat - y)).mean()
         return loss
+
 
 def clean_hp(d, gpu=False):
     for k in d.keys():
@@ -63,7 +72,7 @@ def clean_hp(d, gpu=False):
             "hidden_num",
             "hidden_dim",
             "output_size",
-            "input_size"
+            "input_size",
         ]:
             d[k] = int(d[k])
         elif k in ["architecture", "activation", 'dem_path', 'swath_path', 'data_path', 'coherence_path']:
@@ -73,6 +82,7 @@ def clean_hp(d, gpu=False):
             if gpu:
                 d.B = d.B.cuda()
     return d
+
 
 class EarlyStopper:
     def __init__(self, patience=1, testing_epoch=5, min_delta=1e-4):
@@ -92,12 +102,14 @@ class EarlyStopper:
                 return True
         return False
 
+
 def compute_hook(p, s):
     grad = gradient(p, s)
     laplace = gradient(grad, s)
-    diff_grad = grad[:,1] - grad[:,0]
-    laplace_sum = laplace[:,0] + laplace[:,1]
+    diff_grad = grad[:, 1] - grad[:, 0]
+    laplace_sum = laplace[:, 0] + laplace[:, 1]
     return diff_grad, laplace_sum
+
 
 def inference(sample, model):
     sample.requires_grad = True
@@ -105,17 +117,19 @@ def inference(sample, model):
     diff_grad, laplace_sum = compute_hook(pred, sample)
     return pred.detach(), diff_grad.detach(), laplace_sum.detach()
 
+
 def infere_time_gradient(sample, model):
     # sample.requires_grad = True
-    x = sample[:,0]
-    y = sample[:,1]
-    t = sample[:,2]
+    x = sample[:, 0]
+    y = sample[:, 1]
+    t = sample[:, 2]
     x.requires_grad = True
     y.requires_grad = True
     t.requires_grad = True
     pred = model(torch.stack([x, y, t]).T)
     time_grad = gradient(pred, t)
     return pred.detach(), time_grad.detach()
+
 
 def predict_loop_with_gradient(dataset, bs, model, device="cpu", verbose=True):
     n_data = len(dataset)
@@ -127,7 +141,7 @@ def predict_loop_with_gradient(dataset, bs, model, device="cpu", verbose=True):
     diff_grads = []
     laplace_sums = []
     if True:
-    # with torch.no_grad():
+        # with torch.no_grad():
         for i in train_iterator:
             idx = batch_idx[i : (i + bs)]
             pred, diff_grad, laplace_sum = inference(dataset.samples[idx], model)
@@ -139,6 +153,7 @@ def predict_loop_with_gradient(dataset, bs, model, device="cpu", verbose=True):
     laplace_sums = torch.cat(laplace_sums)
     return preds, diff_grads, laplace_sums
 
+
 def predict_loop_with_time_gradient(dataset, bs, model, device="cpu", verbose=True):
     n_data = len(dataset)
     batch_idx = torch.arange(0, n_data, dtype=int, device=device)
@@ -147,9 +162,9 @@ def predict_loop_with_time_gradient(dataset, bs, model, device="cpu", verbose=Tr
 
     preds = []
     grads = []
-    laplace_sums = []
+
     if True:
-    # with torch.no_grad():
+        # with torch.no_grad():
         for i in train_iterator:
             idx = batch_idx[i : (i + bs)]
             pred, grad_t = infere_time_gradient(dataset.samples[idx], model)
@@ -177,6 +192,7 @@ def predict_loop(dataset, bs, model, device="cpu", verbose=True):
     preds = torch.cat(preds)
     return preds
 
+
 def test_loop(dataset, model, bs, loss_fn, verbose, device="cpu"):
     n_data = len(dataset)
     num_batches = n_data // bs
@@ -193,7 +209,7 @@ def test_loop(dataset, model, bs, loss_fn, verbose, device="cpu"):
             test_loss = test_loss + loss_fn(pred, dataset.targets[idx]).item()
     num_batches = max(num_batches, 1)
     test_loss /= num_batches
-    
+
     if verbose:
         print(f"Test Error: Avg loss: {test_loss:>8f}")
     return test_loss
@@ -215,8 +231,8 @@ def continuous_diff(x, model):
 
     return dz_dxyt
 
-def compute_grad(dataset, model, n_data, bs, device, 
-             input_size, mean_xyt, std_xyt):
+
+def compute_grad(dataset, model, n_data, bs, device, input_size, mean_xyt, std_xyt):
     ## return tvn loss over space and time
     ind = torch.randint(
         0,
@@ -227,7 +243,7 @@ def compute_grad(dataset, model, n_data, bs, device,
     )
     x_sample = dataset.samples[ind, :]
     x_sample.requires_grad_(False)
-    
+
     noise_xyt = torch.normal(mean_xyt, std_xyt)
     x_sample[:, 0:input_size] += noise_xyt
     dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
@@ -274,6 +290,7 @@ def compute_dem_err(dataset, model, bs, device):
 
     return dataset.dem_z[ind, :], dem_z_hat
 
+
 def estimate_density(
     dataset,
     dataset_test,
@@ -285,7 +302,7 @@ def estimate_density(
     temporal=True,
     gpu=False,
     clip_gradients=True,
-    weights=False
+    weights=False,
 ):
     device = "cuda" if gpu else "cpu"
     outname = outname + ".pth"
@@ -302,22 +319,22 @@ def estimate_density(
     lambda_l1 = opt.lambda_l1
     lambda_t = opt.lambda_t
     lambda_xy = opt.lambda_xy
-    
+
     dem = dataset.need_dem
     if dem:
         lambda_dem = opt.lambda_dem
-    grad = not(lambda_t == lambda_xy == 0)
+    grad = not (lambda_t == lambda_xy == 0)
 
-    loss_fn_t = RMSELoss() #mseloss
+    loss_fn_t = RMSELoss()  # mseloss
     loss_fn_l2 = RMSELossW() if weights else RMSELoss()
     loss_fn_l1 = L1LossW() if weights else L1Loss()
-    loss_tvn = RMSELoss() #or mseloss
+    loss_tvn = RMSELoss()  # or mseloss
     # loss = loss_fn_l2 + lambda_l1 * loss_fn_l1
     s = 3 if temporal else 2
     std_data = torch.std(dataset.samples[:, 0:s], dim=0)
     mean_xyt = torch.zeros((opt.bs, s), device=device)
     std_xyt = std_data * torch.ones((opt.bs, s), device=device)
-    
+
     model.train()
     best_test_score = np.inf
     best_epoch = 0
@@ -339,7 +356,9 @@ def estimate_density(
         running_loss, total_num = 0.0, 0
         batch_idx = torch.randperm(n_data, device=device)
         for i in train_iterator:
-            data_batch = dataset[batch_idx[i : (i + bs)]] # possibly sample, target, weights
+            data_batch = dataset[
+                batch_idx[i : (i + bs)]
+            ]  # possibly sample, target, weights
             optimizer.zero_grad()
             # if True:
             with torch.autocast(device_type=device, dtype=torch.float16):
@@ -358,14 +377,14 @@ def estimate_density(
                     l_dem = loss_tvn(dem_z_hat, dem_z)
                     loss += lambda_dem * l_dem
                 if grad:
-                    dz_dxyt = compute_grad(dataset, model, n_data, bs, 
-                                       device, s, mean_xyt, std_xyt)
+                    dz_dxyt = compute_grad(
+                        dataset, model, n_data, bs, device, s, mean_xyt, std_xyt
+                    )
                     loss_xy = loss_tvn(dz_dxyt[:, 0:2], mean_xyt[:, 0:2])
                     loss += lambda_xy * loss_xy
                     if temporal:
                         loss_t = loss_fn_t(dz_dxyt[:, 2:3], mean_xyt[:, 2:3])
                         loss += lambda_t * loss_t
-                    
 
             # Clip gradients
             # loss.backward()
@@ -420,9 +439,9 @@ def estimate_density(
                             opt.B = np.array(opt.B.cpu())
                         opt.best_score = best_test_score
                         np.savez(
-                                outname.replace(".pth", ".npz"),
-                                **opt,
-                            )
+                            outname.replace(".pth", ".npz"),
+                            **opt,
+                        )
                     raise optuna.exceptions.TrialPruned()
 
         if not torch.isfinite(loss):
