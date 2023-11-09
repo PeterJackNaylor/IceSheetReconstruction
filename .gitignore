@@ -322,3 +322,9 @@ work
 .nextflow
 .nextflow*
 nf_meta
+*.npy
+*.tsv
+*.npz
+*.pth
+figures_analysis/
+trained_models/
