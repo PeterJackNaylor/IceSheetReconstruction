@@ -3,6 +3,17 @@ from .data_XYTZ import return_dataset
 from .models import ReturnModel, gen_b
 from .util_train import estimate_density
 
+def add_options(hp, opti):
+    hp.coherence_path = opti.coherence_path
+    hp.dem_path = opti.dem_path
+    hp.swath_path = opti.swath_path
+    hp.data_path = opti.path
+    hp.temporal = opti.temporal
+    return hp
+
+    
+
+
 def train(opt, model_hp, trial=None, return_model=True, gpu=False):
 
     train, test, nv_samples, nv_target = return_dataset(
@@ -61,7 +72,7 @@ def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     else:
         best_score = outputs
         model_hp.best_score = best_score
-
+    model_hp = add_options(model_hp, opt)
     if return_model:
         np.savez(
                 file_name + ".npz",

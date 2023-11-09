@@ -50,10 +50,10 @@ def clean_hp(d, gpu=False):
     for k in d.keys():
         if k in ["fourier", "siren", "siren_skip", 
                  "wires", "verbose", "do_skip",
-                 "normalise_targets"
+                 "normalise_targets", "temporal",
                  ]:
             d[k] = bool(d[k])
-        elif k in ["lr", 'width_gaussian', 'lambda_t', 'lambda_xy', 'lambda_l1']:
+        elif k in ["lr", 'width_gaussian', 'lambda_t', 'lambda_xy', 'lambda_l1', 'best_score']:
             d[k] = float(d[k])
         elif k in [
             "epochs",
@@ -66,7 +66,7 @@ def clean_hp(d, gpu=False):
             "input_size"
         ]:
             d[k] = int(d[k])
-        elif k in ["architecture", "activation"]:
+        elif k in ["architecture", "activation", 'dem_path', 'swath_path', 'data_path', 'coherence_path']:
             d[k] = str(d[k])
         elif k == "B":
             d.B = torch.tensor(d.B)
@@ -231,13 +231,30 @@ def compute_grad(dataset, model, n_data, bs, device,
     noise_xyt = torch.normal(mean_xyt, std_xyt)
     x_sample[:, 0:input_size] += noise_xyt
     dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
+    # dz_dxyt = clip_norm(dz_dxyt, 1)
+    dz_dxyt = clip_norm_per_column(dz_dxyt, 1)
+    
     return dz_dxyt
 
-def compute_dem_err(dataset, model, n_data, bs, device):
+def clip_norm_per_column(x, val):
+    clipped_x = x.clone()
+    for c in range(x.shape[1]):
+        tensor_norm = torch.norm(x[:, c])
+        if tensor_norm > val:
+            clipped_x[:, c] = val * x[:, c] / tensor_norm
+    return clipped_x
+
+def clip_norm(x, val):
+    tensor_norm = torch.norm(x)
+    if tensor_norm > val:
+        x = val * x / tensor_norm
+    return x
+
+def compute_dem_err(dataset, model, bs, device):
     ## return tvn loss over space and time
     ind = torch.randint(
         0,
-        dataset.dem_n,
+        dataset.dem_shape,
         size=(bs,),
         requires_grad=False,
         device=device,
@@ -250,10 +267,11 @@ def compute_dem_err(dataset, model, n_data, bs, device):
         device=device,
     )
     dem_xy = dataset.dem_xy[ind, :]
-    t = dataset.time_samples[ind_t, :]
-    sample_dem = torch.cat([dem_xy, t])
+    t = dataset.time_samples[ind_t]    
+    sample_dem = torch.column_stack([dem_xy, t])
     sample_dem.requires_grad_(False)
     dem_z_hat = model(sample_dem)
+
     return dataset.dem_z[ind, :], dem_z_hat
 
 def estimate_density(
@@ -271,12 +289,13 @@ def estimate_density(
 ):
     device = "cuda" if gpu else "cpu"
     outname = outname + ".pth"
-
     early_stopper = EarlyStopper(patience=15)
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=opt.lr,
+        eps=1e-6,
     )
+    # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=100*opt.lr, steps_per_epoch=len(dataset), epochs=opt.epochs)
     optimizer = LARC(optimizer)
     # optimizer = LARS(optimizer=optimizer, eps=1e-8, trust_coef=0.001)
 
@@ -303,12 +322,14 @@ def estimate_density(
     best_test_score = np.inf
     best_epoch = 0
 
+    scaler = torch.cuda.amp.GradScaler()
+
     if opt.verbose:
         e_iterator = trange(1, opt.epochs + 1)
     else:
         e_iterator = range(1, opt.epochs + 1)
 
-    n_data = dataset.sample_size + dataset.dem_shape
+    n_data = dataset.sample_size
     bs = opt.bs
     for epoch in e_iterator:
         if opt.verbose:
@@ -320,20 +341,21 @@ def estimate_density(
         for i in train_iterator:
             data_batch = dataset[batch_idx[i : (i + bs)]] # possibly sample, target, weights
             optimizer.zero_grad()
-            if True:
-            #with torch.cuda.amp.autocast():
+            # if True:
+            with torch.autocast(device_type=device, dtype=torch.float16):
                 target_pred = model(data_batch[0])
                 sample_weights = None
                 if weights:
                     sample_weights = data_batch[2]
+
                 lmse = loss_fn_l2(target_pred, data_batch[1], sample_weights)
                 lmae = loss_fn_l1(target_pred, data_batch[1], sample_weights)
 
                 loss = lmse + lambda_l1 * lmae
 
                 if dem:
-                    dem_z, dem_z_hat = compute_dem_err(dataset, model, n_data, bs, device)
-                    l_dem = loss_fn_l2(dem_z_hat, dem_z)
+                    dem_z, dem_z_hat = compute_dem_err(dataset, model, bs, device)
+                    l_dem = loss_tvn(dem_z_hat, dem_z)
                     loss += lambda_dem * l_dem
                 if grad:
                     dz_dxyt = compute_grad(dataset, model, n_data, bs, 
@@ -346,10 +368,15 @@ def estimate_density(
                     
 
             # Clip gradients
-            loss.backward()
+            # loss.backward()
+            scaler.scale(loss).backward()
             if clip_gradients:
+                scaler.unscale_(optimizer)
                 nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
+            # scheduler.step()
+            # optimizer.step()
 
             if opt.verbose:
                 running_loss = running_loss + lmse.item()

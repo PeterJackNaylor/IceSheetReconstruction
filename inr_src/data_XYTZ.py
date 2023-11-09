@@ -46,8 +46,6 @@ class XYTZ(Dataset):
         self.nv_samples = nv_samples
         self.input_size = 3 if temporal else 2
         self.step_grid = step_grid
-        self.dem_shape = 0
-        self.dem_repeats = 0
 
         self.need_weights = coherence_path is not None
         weights = None
@@ -194,19 +192,20 @@ class XYTZ(Dataset):
         return samples
 
     def __len__(self):
-        return int(self.sample_size + self.dem_shape * self.dem_repeats)
+        return int(self.sample_size)
 
     def __getitem__(self, idx):
-        if False:
-            idx_dem = idx > self.sample_size
-            n_dem = idx_dem.sum()
-            idx_0 = torch.remainder(idx[idx_dem] - self.sample_size, self.dem_shape)
-            idx[idx_dem] = idx_0 + self.sample_size
-            t_idx = torch.randint(0, self.time_samples.shape[0], (n_dem,))
-            sample = self.samples[idx]
-            sample[idx_dem, 2] = self.time_samples[t_idx]
-        else:
-            sample = self.samples[idx]
+        # if False:
+        #     idx_dem = idx > self.sample_size
+        #     n_dem = idx_dem.sum()
+        #     idx_0 = torch.remainder(idx[idx_dem] - self.sample_size, self.dem_shape)
+        #     idx[idx_dem] = idx_0 + self.sample_size
+        #     t_idx = torch.randint(0, self.time_samples.shape[0], (n_dem,))
+        #     sample = self.samples[idx]
+        #     sample[idx_dem, 2] = self.time_samples[t_idx]
+        # else:
+        
+        sample = self.samples[idx]
         if not self.need_target:
             return sample
         else:

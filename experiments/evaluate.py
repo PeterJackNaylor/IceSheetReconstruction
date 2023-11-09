@@ -1,5 +1,6 @@
 
 import os
+import uuid
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
@@ -57,27 +58,34 @@ def parser_f():
 
     return args
 
-
-
+def post_process_hp(hp):
+    names = []
+    values = []
+    for key, val in hp.items():
+        if key in ["fourier", "siren", 'wires', 'verbose', 'input_size', 'output_size', 'nv_samples', 'nv_target', 'B']:
+            pass
+        else:
+            if key in ['coherence_path', 'swath_path', 'dem_path']:
+                names.append(key.split("_")[0])
+                values.append(not(val == "None"))
+            else:
+                names.append(key)
+                values.append(val)
+    return names, values
 def load_data_model(npz_file, weights, args):
     # project variables
     opt = inr.AttrDict()
-    opt.name = os.path.basename(npz_file).split(".")[0]
+    
+    random_uuid = uuid.uuid4()
+    opt.name = os.path.basename(npz_file).split(".")[0] + "__" + str(random_uuid)
     # model meta data
-    npz = np.load(npz_file)
+    npz = np.load(npz_file, allow_pickle=True)
     model_hp = inr.AttrDict(npz)
     model_hp = inr.util_train.clean_hp(model_hp)
 
     # load data
 
     data_path = f"{args.datafolder}/{args.config.dataset[0]}.npy"
-    coherence_path = data_path.replace("data.npy", "coherence.npy")
-    # coherence_option = coherence_path if model_hp.coherence else None
-    coherence_option =  None
-    swath_path = data_path.replace("data.npy", "swath.npy")
-    # dem_path = f"{args.datafolder}/{args.config.dem_path}"
-    dem_path = None
-    print("Have to switch nv to nv_samples")
     xytz_ds = inr.XYTZ(
             data_path,
             train_fold=False,
@@ -87,13 +95,14 @@ def load_data_model(npz_file, weights, args):
             nv_samples=tuple(model_hp.nv_samples),
             nv_targets=tuple(model_hp.nv_target),
             normalise_targets=model_hp.normalise_targets,
-            temporal=model_hp.nv_samples.shape[0] == 3,
-            coherence_path=coherence_option,
-            dem_path=dem_path,
-            swath_path=swath_path,
+            temporal=model_hp.temporal,
+            coherence_path=None,
+            dem_path=None,
+            swath_path=None,
             gpu=gpu
         )
 
+    coherence_path = data_path.replace("data.npy", "coherence.npy")
     coherence = np.load(coherence_path)
 
     model = inr.ReturnModel(
@@ -169,7 +178,6 @@ def main():
 
     args = parser_f()
 
-
     with open(args.support, 'rb') as poly_file:
         poly_shape = pickle.load(poly_file)
     grid = setup_uniform_grid(poly_shape, args.step)
@@ -216,6 +224,9 @@ def main():
     values = [mse_norm, mae_norm, mse_norm_coh, mae_norm_coh, mse_norm_f, mae_norm_f, mean_t, std_t]
     values = [float(t) for t in values]
     values += errors_q
+    metric_name, metric_value = post_process_hp(model_hp)
+    names += metric_name
+    values += metric_value
     results = pd.DataFrame(values, columns=[opt.name], index=names)
     results.to_csv(f"{opt.name}_results.csv")
 

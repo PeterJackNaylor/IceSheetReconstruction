@@ -1,20 +1,20 @@
 configname: config.yaml
 output: nf_meta
 epochs: 50
-trials: 50
+trials: 30
 n_jobs: 1
 dataset_folder: ./data/
-dataset: [SUBpeterglacier_data] # data/Jan_data, data/Feb_data data/Mar_data
+dataset: [SUBpeterglacier_data] #[SUBpeterglacier_data] # data/Jan_data, data/Feb_data data/Mar_data
 monthly_dataset: [] #Jan_data, Feb_data, Mar_data
 coherence: [On, Off] # Off
 swath: [On, Off] # Off
 dem: [On, Off] # Off
 dem_path: peterglacier_dem.npy
 support: envelop_peterglacier.pickle
-method: [fourier, siren] # wires
+method: [siren] #[fourier, siren] # wires
 normalise: [normalise] # ""
 lr: #log search
-  - 1.e-5 # min
+  - 1.e-6 # min
   - 1.e-1 # max
 bs: # power of 2 search
   - 14  # 512 # min

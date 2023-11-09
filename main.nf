@@ -10,6 +10,7 @@ option = Channel.from(params.normalise)
 config = file(params.configname)
 pyfile = file("experiments/run.py")
 
+println(params)
 
 process INR {
     publishDir "${params.output}", overwrite: true
@@ -34,17 +35,17 @@ process INR {
             opt2 = "${opt_2}"
         }
         name = "${met}_${data}${opt}"
-        if (coherence_opt == "On"){
+        if (coherence_opt){
             opt_coherence = " --coherence_path ${datafolder}/${data.replace('data', 'coherence')}.npy"
         }else{
             opt_coherence = ""
         }
-        if (swath_opt == "On"){
+        if (swath_opt){
             opt_swath = " --swath_path ${datafolder}/${data.replace('data', 'swath')}.npy"
         }else{
             opt_swath = ""
         }
-        if (dem_opt == "On"){
+        if (dem_opt){
             opt_dem = " --dem_path ${datafolder}/${params.dem_path}"
         }else{
             opt_dem = ""
@@ -81,14 +82,26 @@ process Evaluate {
         """
 }
 
-// process Regroup {
+py_group = file("experiments/group.py")
+
+process Regroup {
+    publishDir "./", overwrite: true
+    input:
+        path(f)
+    output:
+        path "performance.tsv"
+    script:
+        """
+        python $py_group
+        """
     
-// }
+}
 
 workflow {
 
     main:
         INR(ds, method, option, params.coherence, params.swath, params.dem)
         Evaluate(INR.output, config)
-        // Regroup(Evaluate.output.collect())
+        // performance.out.collectFile(name: "performance.tsv", skip: 1, keepHeader: true)
+        Regroup(Evaluate.output.collect())
 }
