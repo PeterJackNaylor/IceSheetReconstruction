@@ -8,9 +8,26 @@ method = Channel.from(params.method)
 option = Channel.from(params.normalise)
 
 config = file(params.configname)
-pyfile = file("experiments/run.py")
 
 println(params)
+
+pypreprocess = file("experiments/preprocess.py")
+
+process PreProcess {
+    input:
+        tuple val(data), val(opt_2)
+    output:
+        tuple path("data.npy"), val(opt_2)
+    
+    script:
+        """
+        python ${pypreprocess} --data ${datafolder}/${data}
+        """
+
+
+}
+
+pyfile = file("experiments/run.py")
 
 process INR {
     publishDir "${params.output}", overwrite: true
@@ -100,7 +117,8 @@ process Regroup {
 workflow {
 
     main:
-        INR(ds, method, option, params.coherence, params.swath, params.dem)
+        PreProcess(ds)
+        INR(PreProcess.out, method, option, params.coherence, params.swath, params.dem)
         Evaluate(INR.output, config)
         // performance.out.collectFile(name: "performance.tsv", skip: 1, keepHeader: true)
         Regroup(Evaluate.output.collect())
