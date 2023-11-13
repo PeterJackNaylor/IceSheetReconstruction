@@ -212,7 +212,7 @@ class XYTZ(Dataset):
         #     sample = self.samples[idx]
         #     sample[idx_dem, 2] = self.time_samples[t_idx]
         # else:
-        
+
         sample = self.samples[idx]
         if not self.need_target:
             return sample

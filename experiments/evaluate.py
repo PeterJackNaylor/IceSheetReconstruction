@@ -55,24 +55,37 @@ def parser_f():
 
     return args
 
+
 def post_process_hp(hp):
     names = []
     values = []
     for key, val in hp.items():
-        if key in ["fourier", "siren", 'wires', 'verbose', 'input_size', 'output_size', 'nv_samples', 'nv_target', 'B']:
+        if key in [
+            "fourier",
+            "siren",
+            "wires",
+            "verbose",
+            "input_size",
+            "output_size",
+            "nv_samples",
+            "nv_target",
+            "B",
+        ]:
             pass
         else:
-            if key in ['coherence_path', 'swath_path', 'dem_path']:
+            if key in ["coherence_path", "swath_path", "dem_path"]:
                 names.append(key.split("_")[0])
-                values.append(not(val == "None"))
+                values.append(not (val == "None"))
             else:
                 names.append(key)
                 values.append(val)
     return names, values
+
+
 def load_data_model(npz_file, weights, args):
     # project variables
     opt = inr.AttrDict()
-    
+
     random_uuid = uuid.uuid4()
     opt.name = os.path.basename(npz_file).split(".")[0] + "__" + str(random_uuid)
     # model meta data
@@ -84,20 +97,20 @@ def load_data_model(npz_file, weights, args):
 
     data_path = f"{args.datafolder}/{args.config.dataset[0]}.npy"
     xytz_ds = inr.XYTZ(
-            data_path,
-            train_fold=False,
-            train_fraction=0.0,
-            seed=42,
-            pred_type="pc",
-            nv_samples=tuple(model_hp.nv_samples),
-            nv_targets=tuple(model_hp.nv_target),
-            normalise_targets=model_hp.normalise_targets,
-            temporal=model_hp.temporal,
-            coherence_path=None,
-            dem_path=None,
-            swath_path=None,
-            gpu=gpu
-        )
+        data_path,
+        train_fold=False,
+        train_fraction=0.0,
+        seed=42,
+        pred_type="pc",
+        nv_samples=tuple(model_hp.nv_samples),
+        nv_targets=tuple(model_hp.nv_target),
+        normalise_targets=model_hp.normalise_targets,
+        temporal=model_hp.temporal,
+        coherence_path=None,
+        dem_path=None,
+        swath_path=None,
+        gpu=gpu,
+    )
 
     coherence_path = data_path.replace("data.npy", "coherence.npy")
     coherence = np.load(coherence_path)
@@ -183,7 +196,7 @@ def time_prediction(grid, model, model_hp, time):
 def main():
     args = parser_f()
 
-    with open(args.support, 'rb') as poly_file:
+    with open(args.support, "rb") as poly_file:
         poly_shape = pickle.load(poly_file)
     grid = setup_uniform_grid(poly_shape, args.step)
     grid = keep_within_dem(grid, poly_shape)

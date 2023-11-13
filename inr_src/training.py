@@ -3,6 +3,7 @@ from .data_XYTZ import return_dataset
 from .models import ReturnModel, gen_b
 from .util_train import estimate_density
 
+
 def add_options(hp, opti):
     hp.coherence_path = opti.coherence_path
     hp.dem_path = opti.dem_path
@@ -10,6 +11,7 @@ def add_options(hp, opti):
     hp.data_path = opti.path
     hp.temporal = opti.temporal
     return hp
+
 
 def train(opt, model_hp, trial=None, return_model=True, gpu=False):
     train, test, nv_samples, nv_target = return_dataset(

@@ -57,12 +57,25 @@ class L1LossW(nn.Module):
 
 def clean_hp(d, gpu=False):
     for k in d.keys():
-        if k in ["fourier", "siren", "siren_skip", 
-                 "wires", "verbose", "do_skip",
-                 "normalise_targets", "temporal",
-                 ]:
+        if k in [
+            "fourier",
+            "siren",
+            "siren_skip",
+            "wires",
+            "verbose",
+            "do_skip",
+            "normalise_targets",
+            "temporal",
+        ]:
             d[k] = bool(d[k])
-        elif k in ["lr", 'width_gaussian', 'lambda_t', 'lambda_xy', 'lambda_l1', 'best_score']:
+        elif k in [
+            "lr",
+            "width_gaussian",
+            "lambda_t",
+            "lambda_xy",
+            "lambda_l1",
+            "best_score",
+        ]:
             d[k] = float(d[k])
         elif k in [
             "epochs",
@@ -75,7 +88,14 @@ def clean_hp(d, gpu=False):
             "input_size",
         ]:
             d[k] = int(d[k])
-        elif k in ["architecture", "activation", 'dem_path', 'swath_path', 'data_path', 'coherence_path']:
+        elif k in [
+            "architecture",
+            "activation",
+            "dem_path",
+            "swath_path",
+            "data_path",
+            "coherence_path",
+        ]:
             d[k] = str(d[k])
         elif k == "B":
             d.B = torch.tensor(d.B)
@@ -249,8 +269,9 @@ def compute_grad(dataset, model, n_data, bs, device, input_size, mean_xyt, std_x
     dz_dxyt = continuous_diff(x_sample.clone().detach(), model)
     # dz_dxyt = clip_norm(dz_dxyt, 1)
     dz_dxyt = clip_norm_per_column(dz_dxyt, 1)
-    
+
     return dz_dxyt
+
 
 def clip_norm_per_column(x, val):
     clipped_x = x.clone()
@@ -260,11 +281,13 @@ def clip_norm_per_column(x, val):
             clipped_x[:, c] = val * x[:, c] / tensor_norm
     return clipped_x
 
+
 def clip_norm(x, val):
     tensor_norm = torch.norm(x)
     if tensor_norm > val:
         x = val * x / tensor_norm
     return x
+
 
 def compute_dem_err(dataset, model, bs, device):
     ## return tvn loss over space and time
@@ -283,7 +306,7 @@ def compute_dem_err(dataset, model, bs, device):
         device=device,
     )
     dem_xy = dataset.dem_xy[ind, :]
-    t = dataset.time_samples[ind_t]    
+    t = dataset.time_samples[ind_t]
     sample_dem = torch.column_stack([dem_xy, t])
     sample_dem.requires_grad_(False)
     dem_z_hat = model(sample_dem)

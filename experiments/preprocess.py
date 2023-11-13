@@ -27,13 +27,19 @@ def save():
     pass
 
 
-def exclude_outliers(data:np.array, std_multiple:float, time_step:int, grid_size_m:int, grid_overlap_m:int):
+def exclude_outliers(
+    data: np.array,
+    std_multiple: float,
+    time_step: int,
+    grid_size_m: int,
+    grid_overlap_m: int,
+):
     pass
     # data format: [lat, lon, z, t, coherence, swath_id]
 
     # Define the projection (Stereographic projection centered on the North Pole)
-    proj = pyproj.Proj(proj='stere', lat_0=90, lon_0=0)
-    
+    proj = pyproj.Proj(proj="stere", lat_0=90, lon_0=0)
+
     points = np.copy(data)
     points[:, 0:2] = proj(data[:, 1], data[:, 0])
 
@@ -59,11 +65,11 @@ def exclude_outliers(data:np.array, std_multiple:float, time_step:int, grid_size
         within_t = np.logical_and(points[:, 3] > t, points[:, 3] <= t - time_step)
         points_within_t = points[within_t]
         _, indices = tree.query(points_within_t[:, :2])
-        
+
         # Initialize arrays for the mean and std of each cell
         mean_values = np.zeros(len(grid_points))
         std_values = np.zeros(len(grid_points))
-        
+
         # For each grid point (cell)
         for i, grid_point in enumerate(tqdm(grid_points)):
             # Determine the boundaries of the current cell
@@ -71,9 +77,13 @@ def exclude_outliers(data:np.array, std_multiple:float, time_step:int, grid_size
             cell_x_max, cell_y_max = grid_point + grid_overlap_m
 
             # Get the points within the current cell
-            cell_points = points_within_t[(points_within_t[:, 0] >= cell_x_min) & (points_within_t[:, 0] < cell_x_max)
-                                          & (points_within_t[:, 1] >= cell_y_min) & (points_within_t[:, 1] < cell_y_max)]
-            
+            cell_points = points_within_t[
+                (points_within_t[:, 0] >= cell_x_min)
+                & (points_within_t[:, 0] < cell_x_max)
+                & (points_within_t[:, 1] >= cell_y_min)
+                & (points_within_t[:, 1] < cell_y_max)
+            ]
+
             # Calculate the mean and std of the points within the current cell
             if len(cell_points) == 0:
                 cells_with_0 += 1
@@ -86,23 +96,33 @@ def exclude_outliers(data:np.array, std_multiple:float, time_step:int, grid_size
             else:
                 mean_values[i] = np.mean(cell_points[:, 2])
                 std_values[i] = np.std(cell_points[:, 2])
-            
+
         # Now you can create a boolean array that indicates whether each point is within three standard deviations of the mean of its cell
         within_threshold = np.zeros(points_within_t.shape[0], dtype=bool)
 
         # Check if the point is within three standard deviations of the mean of its cell
-        within_threshold = np.all((points_within_t[:, 2] >= mean_values[indices] - std_multiple * std_values[indices])
-                                   & (points_within_t[:, 2] <= mean_values[indices] + std_multiple * std_values[indices]))
-            
+        within_threshold = np.all(
+            (
+                points_within_t[:, 2]
+                >= mean_values[indices] - std_multiple * std_values[indices]
+            )
+            & (
+                points_within_t[:, 2]
+                <= mean_values[indices] + std_multiple * std_values[indices]
+            )
+        )
+
         outliers[points_within_t][~within_threshold]
 
     data = data[~outliers]
-    print(f"number of points left: {np.sum(outliers)} out of {points.shape[0]}, a reduction of {points.shape[0] - np.sum(outliers)} points")
+    print(
+        f"number of points left: {np.sum(outliers)} out of {points.shape[0]}, a reduction of {points.shape[0] - np.sum(outliers)} points"
+    )
 
     return data, outliers
 
 
-def exclude_coherence(data:np.array, coherence_threshold:float=0.6):
+def exclude_coherence(data: np.array, coherence_threshold: float = 0.6):
     # data format: [lat, lon, z, t, coherence, swath_id]
     below_threshold = data[:, 4] < coherence_threshold
     data = data[below_threshold]
@@ -115,13 +135,18 @@ def main():
     data = np.load(options.data_path)
 
     if options.exclude_coherence:
-        options.exclude_grid_size_m = grid_size_m = np.array((10, 10)) * 1000
+        options.exclude_grid_size_m = np.array((10, 10)) * 1000
         options.exclude_grid_overlap_m = options.exclude_grid_size_m // 2
-        data, _ = exclude_coherence(data=data, coherence_threshold=options.coherence_threshold,
-                                    grid_size_m=options.exclude_grid_size_m, grid_overlap_m=options.exclude_grid_overlap_m)
+        data, _ = exclude_coherence(
+            data=data,
+            coherence_threshold=options.coherence_threshold,
+            grid_size_m=options.exclude_grid_size_m,
+            grid_overlap_m=options.exclude_grid_overlap_m,
+        )
 
     if options.exclude_outliers:
         data, _ = exclude_outliers(data=data, std_multiple=options.exclude_std_multiple)
+
 
 if __name__ == "__main__":
     main()

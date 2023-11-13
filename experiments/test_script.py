@@ -14,12 +14,11 @@ opt.coherence_path = f"../data/{name}_coherence.npy"
 opt.swath_path = f"../data/{name}_swath.npy"
 opt.dem_path = "../data/peterglacier_dem.npy"
 opt.gpu = gpu
-opt.model_name = "siren" # or siren or wires
+opt.model_name = "siren"  # or siren or wires
 opt.name = "{}_test"
 opt.temporal = True
 opt.normalise_targets = True
 model_hp = inr.AttrDict()
-
 
 
 opt.fourier = opt.model_name == "RFF"
