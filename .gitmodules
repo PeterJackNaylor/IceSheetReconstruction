@@ -1,0 +1,4 @@
+[submodule "MyPINNs"]
+	path = MyPINNs
+	url = https://github.com/PeterJackNaylor/MyPINNs.git
+        branch = master
