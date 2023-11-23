@@ -326,5 +326,4 @@ nf_meta
 *.tsv
 *.npz
 *.pth
-figures_analysis/
-trained_models/
+outputs

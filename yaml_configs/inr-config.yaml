@@ -1,0 +1,120 @@
+#training
+epochs: 200 #180 #00
+normalise_targets: True
+test_epochs: 10
+save_model: True
+seed: 42
+train_fraction: 0.8
+
+#Models
+model:
+  name: RFF #or RFF/SIREN/WIRES
+  hidden_nlayers: 4
+  hidden_width: 256
+  scale: 1
+  skip: False
+  ## RFF specific
+  mapping_size: 256
+  activation: tanh
+  modified_mlp: False # if you have a seperate encoder for the spatial and temporal inputs.
+  linear: HE # HE # Glorot # RWF RWF does not work with SIREN
+  # RWF Specific
+  mean: 1
+  std: 0.1
+
+# Lambda values in the loss
+validation_loss: mse
+losses:
+  mse:
+    report: True
+    bs: 8192
+    loss_balancing: True
+  dem:
+    report: True
+    bs: 8192
+    loss_balancing: True
+    lambda: 1.e-1
+    method: dem
+    temporal_causality: False
+
+  gradient_lat:
+    report: True
+    log: True
+    lambda: 1.e-1
+    temporal_causality: False
+    bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
+    method: gradient_lat
+    loss_balancing: False #wether to be included in loss balancing
+  gradient_lon:
+    report: True
+    log: True
+    lambda: 1.e-1
+    temporal_causality: False
+    bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
+    method: gradient_lon
+    loss_balancing: False #wether to be included in loss balancing
+  gradient_time:
+    report: True
+    log: True
+    lambda: 1.e-1
+    temporal_causality: False
+    bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
+    method: gradient_time
+    loss_balancing: False #wether to be included in loss balancing
+
+  # mae:
+  #   report: False
+  #   lambda: 1.e-1
+
+# learning schemes
+temporal_causality:
+  M: 32 # powers of 2 only
+  eps: 1
+  step: 1 #update
+
+
+# Loss balancing
+relobralo:
+  status: False
+  T: 1.
+  alpha: 0.999
+  rho: 0.5
+  f: 10
+
+self_adapting_loss_balancing:
+  status: True
+  alpha: 0.9
+  step: 1000 #update
+
+
+early_stopping:
+  status: False
+  ignore_first: 5
+  patience: 20
+  value: 0.0001
+
+
+# optimizers
+lr: 1.e-3
+eps: 1.e-8 #adam precision
+clip_gradients: True
+
+# schedulers
+# learning_rate_decay:
+#   status: True
+#   step: 500
+#   gamma: 0.1
+learning_rate_decay:
+  status: True
+  step: 2000
+  gamma: 0.9 # 0.9
+
+cosine_anealing:
+  status: False
+  min_eta: 0
+  step: 500
+
+
+optuna:
+  patience: 10000
+  trials: 100

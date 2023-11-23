@@ -1,3 +1,5 @@
+import argparse
+from pinns import read_yaml
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -7,57 +9,23 @@ from shapely.geometry import Point, Polygon
 from tqdm import tqdm
 from glob import glob
 import pickle
-import argparse
+from data_converter import get_dataset_from_xarray
 
 
-def config():
+def parser_f():
     parser = argparse.ArgumentParser(
-        description="Generating dem points",
+        description="Generating dem point for contour of Ice Sheet",
     )
-
-    parser.add_argument("--path", type=str, default="./data/01")
-
-    parser.add_argument("--dem_path", type=str, default="./data/Util_GrIS_1km.nc")
     parser.add_argument(
-        "--distance",
-        type=float,
-        default=0.5,
-    )
-
-    parser.add_argument(
-        "--alpha",
-        type=float,
-        default=5.5,
-    )
-
-    parser.add_argument(
-        "--factor",
-        type=int,
-        default=10,
-    )
-
-    parser.add_argument("--plot", dest="plot", action="store_true")
-    parser.set_defaults(plot=False)
-
-    parser.add_argument(
-        "--name",
-        default="DEM_contours",
+        "--data",
         type=str,
     )
+    parser.add_argument("--params", type=str, help="Yaml file path")
 
     args = parser.parse_args()
+    args.p = read_yaml(args.params)
+
     return args
-
-
-def get_dataset_from_xarray(path, swath_id=0):
-    xa = xr.open_dataset(path)
-    df = xa.to_dataframe()
-    df["Swath"] = swath_id
-    df = df[["Lat", "Lon", "Height", "Time", "Swath", "Coherence"]]
-    df.Time = df.Time.dt.total_seconds().astype(int)
-    df = df[df.index.get_level_values("d2") == 0]
-    df = df.reset_index(drop=True)
-    return df.to_numpy()
 
 
 def load(folder):
@@ -84,7 +52,7 @@ def plot_polygon(point_support, points):
             plt.plot(x, y, color="red")
 
 
-def generate_polygones(point_support, distance):
+def generate_polygones(point_support, distance, xfact=1, yfact=2, smoothing=5):
     max_points = 0
     final_polygon = None
     try:
@@ -95,18 +63,14 @@ def generate_polygones(point_support, distance):
                 final_polygon = polygon
     except:
         final_polygon = point_support
-    scaled_polygon = affinity.scale(final_polygon, xfact=1, yfact=2, origin="center")
-    buffer_polygon = scaled_polygon.buffer(distance)
+    scaled_polygon = affinity.scale(
+        final_polygon, xfact=xfact, yfact=yfact, origin="center"
+    )
+    buffer_polygon = scaled_polygon.buffer(distance + smoothing).buffer(-smoothing)
     return final_polygon, scaled_polygon, buffer_polygon
 
 
 def plot_something(final_polygon, buffer_polygon, name):
-    # point_support,
-    # x, y = point_support.geoms[-1].exterior.coords.xy
-
-    # plt.plot(x, y, color='red')
-    # plt.savefig(f"{name}2.png")
-    # plt.close('all')
     plt.figure()
     x, y = final_polygon.exterior.coords.xy
     plt.plot(x, y, color="blue")
@@ -135,9 +99,8 @@ def add_dem(path, buffer_polygon, final_polygon):
                     inside[i, j] = True
 
     h[h < 0] = 0
-    dem_points = np.stack((lon[inside], lat[inside], h[inside]), axis=1)
+    dem_points = np.stack((lat[inside], lon[inside], h[inside]), axis=1)
     return dem_points
-    # dem_nc[h < 100] = False
 
 
 def plot_dem(dem, final_polygon, buffer_polygon, name):
@@ -157,33 +120,31 @@ def get_dem_points(name_dem: str):
 
 
 def main():
-    opt = config()
-    if opt.path[-3:] == "npy":
-        points = np.load(opt.path)[:, :2]
-    else:
-        points = load(opt.path)
+    opt = parser_f()
+
+    points = load(opt.p.one_month_data)
 
     # Select 1/100 points at random
     indices = np.random.choice(
-        points.shape[0], size=points.shape[0] // opt.factor, replace=False
+        points.shape[0], size=points.shape[0] // opt.p.factor, replace=False
     )
     points = points[indices]
-    alpha_shape = alphashape.alphashape(points, opt.alpha)
-    final_polygon, scaled_polygon, buffer_polygon = generate_polygones(
-        alpha_shape, opt.distance
+    alpha_shape = alphashape.alphashape(points, opt.p.alpha)
+    final_polygon, _, buffer_polygon = generate_polygones(
+        alpha_shape, opt.p.distance, opt.p.xfact, opt.p.yfact, opt.p.smoothing
     )
-    with open("./envelop_peterglacier.pickle", "wb") as poly_file:
+    with open(opt.p.polygon_name, "wb") as poly_file:
         pickle.dump(final_polygon, poly_file, pickle.HIGHEST_PROTOCOL)
 
-    dem_points = add_dem(opt.dem_path, buffer_polygon, final_polygon)
+    dem_points = add_dem(opt.p.dem_path, buffer_polygon, final_polygon)
 
-    if opt.plot:
+    if opt.p.plot:
         plot_polygon(alpha_shape, points)
-        plt.savefig(f"{opt.name}.png")
+        plt.savefig(f"{opt.p.name}.png")
 
-        plot_something(final_polygon, buffer_polygon, opt.name)
-        plot_dem(dem_points, final_polygon, buffer_polygon, opt.name)
-    np.save(f"{opt.name}.npy", dem_points)
+        plot_something(final_polygon, buffer_polygon, opt.p.name)
+        plot_dem(dem_points, final_polygon, buffer_polygon, opt.p.name)
+    np.save(f"{opt.p.name}.npy", dem_points)
 
 
 if __name__ == "__main__":

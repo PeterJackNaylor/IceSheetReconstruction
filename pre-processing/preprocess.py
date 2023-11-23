@@ -4,6 +4,7 @@ import numpy as np
 import pyproj
 import scipy
 from tqdm import tqdm
+from math import floor, ceil
 
 
 def parser_f():
@@ -22,12 +23,12 @@ def parser_f():
     return args
 
 
-def load():
-    pass
+def load(path):
+    return np.load(path)
 
 
-def save():
-    pass
+def save(npy):
+    np.save("p-data.npy", npy)
 
 
 def exclude_outliers(
@@ -37,14 +38,13 @@ def exclude_outliers(
     grid_size_m: int,
     grid_overlap_m: int,
 ):
-    pass
-    # data format: [lat, lon, z, t, coherence, swath_id]
+    # data format: [lat, lon, z, t, swath_id, coherence]
 
     # Define the projection (Stereographic projection centered on the North Pole)
     proj = pyproj.Proj(proj="stere", lat_0=90, lon_0=0)
 
     points = np.copy(data)
-    points[:, 0:2] = proj(data[:, 1], data[:, 0])
+    points[:, 0:2] = np.column_stack(proj(data[:, 1], data[:, 0]))
 
     # Define the grid
     x_min, y_min = points[:, 0].min(), points[:, 1].min()
@@ -58,14 +58,14 @@ def exclude_outliers(
     # Create a cKDTree object
     tree = scipy.spatial.cKDTree(grid_points)
 
-    outliers = np.zeros_like(points.shape[0])
+    outliers = np.zeros_like(points[:, 0])
 
     cells_with_0 = 0
     cells_with_1 = 0
 
-    for t in tqdm(range(data[:, 3].max(), time_step)):
+    for t in tqdm(range(floor(data[:, 3].min()), ceil(data[:, 3].max()), time_step)):
         # Find the nearest grid point for each point within t - time_step
-        within_t = np.logical_and(points[:, 3] > t, points[:, 3] <= t - time_step)
+        within_t = np.logical_and(points[:, 3] > t, points[:, 3] <= t + time_step)
         points_within_t = points[within_t]
         _, indices = tree.query(points_within_t[:, :2])
 
@@ -100,55 +100,61 @@ def exclude_outliers(
                 mean_values[i] = np.mean(cell_points[:, 2])
                 std_values[i] = np.std(cell_points[:, 2])
 
-        # Now you can create a boolean array that indicates whether each point is within three standard deviations of the mean of its cell
+        # Now you can create a boolean array that indicates whether
+        # each point is within three standard deviations of the mean of its cell
         within_threshold = np.zeros(points_within_t.shape[0], dtype=bool)
 
         # Check if the point is within three standard deviations of the mean of its cell
-        within_threshold = np.all(
-            (
-                points_within_t[:, 2]
-                >= mean_values[indices] - std_multiple * std_values[indices]
-            )
-            & (
-                points_within_t[:, 2]
-                <= mean_values[indices] + std_multiple * std_values[indices]
-            )
+        within_threshold = np.logical_and(
+            points_within_t[:, 2]
+            >= mean_values[indices] - std_multiple * std_values[indices],
+            points_within_t[:, 2]
+            <= mean_values[indices] + std_multiple * std_values[indices],
         )
-
-        outliers[points_within_t][~within_threshold]
-
-    data = data[~outliers]
-    print(
-        f"number of points left: {np.sum(outliers)} out of {points.shape[0]}, a reduction of {points.shape[0] - np.sum(outliers)} points"
-    )
+        tt = outliers[within_t]
+        tt[~within_threshold] += 1
+        outliers[within_t] = tt
+    data = data[~outliers.astype(bool)]
 
     return data, outliers
 
 
 def exclude_coherence(data: np.array, coherence_threshold: float = 0.6):
-    # data format: [lat, lon, z, t, coherence, swath_id]
-    below_threshold = data[:, 4] < coherence_threshold
+    # data format: [lat, lon, z, t, swath_id, coherence]
+    below_threshold = data[:, 5] > coherence_threshold
     data = data[below_threshold]
 
     return data, below_threshold
 
 
 def main():
-    options = parser_f()
-    data = np.load(options.data)
+    opt = parser_f()
+    data = np.load(opt.data)
 
-    if options.exclude_coherence:
-        options.exclude_grid_size_m = np.array((10, 10)) * 1000
-        options.exclude_grid_overlap_m = options.exclude_grid_size_m // 2
+    if opt.p.exclude_coherence:
+        n0 = data.shape[0]
         data, _ = exclude_coherence(
             data=data,
-            coherence_threshold=options.coherence_threshold,
-            grid_size_m=options.exclude_grid_size_m,
-            grid_overlap_m=options.exclude_grid_overlap_m,
+            coherence_threshold=opt.p.coherence_threshold,
         )
+        n1 = data.shape[0]
+        print(f"Coherence filter: from {n0} to {n1} samples. Removed {n0 - n1}")
 
-    if options.exclude_outliers:
-        data, _ = exclude_outliers(data=data, std_multiple=options.exclude_std_multiple)
+    if opt.p.exclude_outliers:
+        n0 = data.shape[0]
+        exclude_grid_size_m = np.array((opt.p.grid_size, opt.p.grid_size))
+        exclude_grid_overlap_m = (exclude_grid_size_m * opt.p.overlay).astype("int")
+        data, _ = exclude_outliers(
+            data=data,
+            std_multiple=opt.p.exclude_std_multiple,
+            time_step=opt.p.time_step,
+            grid_size_m=exclude_grid_size_m,
+            grid_overlap_m=exclude_grid_overlap_m,
+        )
+        n1 = data.shape[0]
+        print(f"Outliers filter: from {n0} to {n1} samples. Removed {n0 - n1}")
+
+    save(data)
 
 
 if __name__ == "__main__":

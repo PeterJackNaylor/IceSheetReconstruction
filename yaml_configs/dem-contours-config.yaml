@@ -1,0 +1,11 @@
+dem_path: /Data/pnaylor/data_ice_sheet/Util_GrIS_1km.nc
+one_month_data: /Data/pnaylor/data_ice_sheet/2015/01
+distance: 0.2
+alpha: 5.5
+xfact: 1
+yfact: 1.1
+smoothing: 1
+factor: 10 # sub sampling factor
+plot: On
+name: DEM_Contours
+polygon_name: envelop_polygon.pickle

@@ -38,7 +38,7 @@ def get_dataset_from_xarray(path, swath_id=0):
     xa = xarray.open_dataset(path)
     df = xa.to_dataframe()
     df["Swath"] = swath_id
-    df = df[["Lon", "Lat", "Height", "Time", "Swath", "Coherence"]]
+    df = df[["Lat", "Lon", "Height", "Time", "Swath", "Coherence"]]
     df = df[df.index.get_level_values("d2") == 0]
     df = df.reset_index(drop=True)
     df.Time = set_time(df.Time)

@@ -1,15 +1,4 @@
 
-// import groovy.yaml.YamlBuilder
-
-// dataset = Channel.from(params.dataset)
-// monthly_dataset = Channel.from(params.monthly_dataset)
-// datafolder = file(params.dataset_folder)
-// dataset .map{tuple(it, "--time")} .concat( monthly_dataset .map{tuple(it, "--no-time")}) .set{ds}
-// method = Channel.from(params.method)
-// option = Channel.from(params.normalise)
-
-// config = file(params.configname)
-
 println("=============================================================================")
 println("=                                PARAMS:                                    =")
 println("=                             ISRIN PIPELINE                                =")
@@ -72,64 +61,90 @@ process Pre_process {
         tuple path(data), val(dataconfig)
         path params
     output:
-        path "p-data.npy"
+        tuple path("p-data.npy"), val(dataconfig)
 
     script:
         """
         python $pypreprocess --data $data --params $params
         """
-
-
 }
 
-// pyfile = file("experiments/run.py")
+pydemcontours = file("pre-processing/dem_contours.py")
+params_demcontours = file("yaml_configs/" + params.dem_contours_config)
 
-// process INR {
-//     publishDir "${params.output}", overwrite: true
+process DemFile {
 
-//     input:
-//         tuple val(data), val(opt_2)
-//         each met
-//         each opt
-//         each coherence_opt
-//         each swath_opt
-//         each dem_opt
+    publishDir "outputs/${dataconfig}/data/DEM", overwrite: true
 
-//     output:
-//         path("${name}.pth")
-//         path("${name}.npz")
+    input:
+        path pydemcontours
+        path params
+        val dataconfig
+    output:
+        path "DEM_Contours.npy"
+        path "envelop_polygon.pickle"
+        path "*.png"
+    script:
+        """
+        python $pydemcontours --params $params
+        """
+}
 
-//     script:
-//         if (opt == "normalise"){
-//             opt = "_${opt}"
-//             opt2 = "--normalise_targets ${opt_2}"
-//         } else {
-//             opt2 = "${opt_2}"
-//         }
-//         name = "${met}_${data}${opt}"
-//         if (coherence_opt){
-//             opt_coherence = " --coherence_path ${datafolder}/${data.replace('data', 'coherence')}.npy"
-//         }else{
-//             opt_coherence = ""
-//         }
-//         if (swath_opt){
-//             opt_swath = " --swath_path ${datafolder}/${data.replace('data', 'swath')}.npy"
-//         }else{
-//             opt_swath = ""
-//         }
-//         if (dem_opt){
-//             opt_dem = " --dem_path ${datafolder}/${params.dem_path}"
-//         }else{
-//             opt_dem = ""
-//         }
-//         """
-//         python ${pyfile} \
-//             --path ${datafolder}/${data}.npy \
-//             --name ${name} \
-//             --yaml_file ${config} \
-//             --${met} --gpu ${opt2} ${opt_coherence} ${opt_swath} ${opt_dem}
-//         """
-// }
+pyinr = file("IceSheetPINNs/single_run.py")
+params_inr = file("yaml_configs/" + params.inr_config)
+
+process INR {
+
+    publishDir "outputs/${dataconfig}/INR", overwrite: true, pattern: "*.pth"
+    publishDir "outputs/${dataconfig}/INR", overwrite: true, pattern: "*.npz"
+    publishDir "outputs/${dataconfig}/INR", overwrite: true, pattern: "${name}"
+
+    input:
+        path pyinr
+        tuple path(data), val(dataconfig)
+        each coherence
+        each swath
+        each dem
+        path dem_file
+        path polygon
+        path yaml_file
+
+
+    output:
+        tuple path("${name}.pth"), path("${name}.npz")
+        path(name)
+        path("${name}.csv")
+        val(dataconfig)
+
+    script:
+        name = "INR_${dataconfig}_Coh_${coherence}_Swa_${swath}_Dem_${dem}"
+        """
+            python $pyinr --data $data \
+                --name $name \
+                --yaml_file $yaml_file \
+                --coherence $coherence \
+                --swath $swath \
+                --dem $dem --dem_data $dem_file \
+                --polygon $polygon
+        """
+}
+pyregroup = file("postprocessing/regroup_csv.py")
+
+process Regroup {
+    publishDir "outputs/${dataconfig}", overwrite: true
+    input:
+        path pyregroup
+        path csvs
+        val dataconfig
+
+    output:
+        path "${dataconfig}.csv"
+
+    script:
+        """
+        python $pyregroup $dataconfig
+        """
+}
 
 
 // py_evaluate = file("experiments/evaluate.py")
@@ -154,29 +169,24 @@ process Pre_process {
 //         """
 // }
 
-// py_group = file("experiments/group.py")
 
-// process Regroup {
-//     publishDir "./", overwrite: true
-//     input:
-//         path(f)
-//     output:
-//         path "performance.tsv"
-//     script:
-//         """
-//         python $py_group
-//         """
-
-// }
-
+        // path pyinr
+        // tuple val(data), val(dataconfig)
+        // // each met
+        // // each opt
+        // each coherence
+        // each swath
+        // each dem
+        // path dem_file
+        // path yaml_file
 workflow {
 
     main:
+        DemFile(pydemcontours, params_demcontours, params.data_setup)
         ConvertNC2NPY(pyconvert, params.datapath, params.data_setup)
         Pre_process(pypreprocess, ConvertNC2NPY.output, params_preprocess)
-        // PreProcess(ConvertNC2NPY.output)
-        // INR(PreProcess.out, method, option, params.coherence, params.swath, params.dem)
-        // Evaluate(INR.output, config)
-        // // performance.out.collectFile(name: "performance.tsv", skip: 1, keepHeader: true)
-        // Regroup(Evaluate.output.collect())
+        INR(pyinr, Pre_process.out, params.coherence, params.swath,
+            params.dem, DemFile.out[0], DemFile.out[1], params_inr)
+        Regroup(pyregroup, INR.out[2].collect(), INR.out[3].first())
+
 }
