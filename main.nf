@@ -146,39 +146,6 @@ process Regroup {
         """
 }
 
-
-// py_evaluate = file("experiments/evaluate.py")
-
-// process Evaluate {
-//     publishDir "nf_meta/", overwrite: true
-
-//     input:
-//         path(weight)
-//         path(npz)
-//         path(config)
-//     output:
-//         path("*.csv")
-
-//     script:
-//         """
-//         python $py_evaluate --model_param $npz \
-//                             --model_weights $weight \
-//                             --config ${config} \
-//                             --datafolder ${datafolder} \
-//                             --support ${datafolder}/${params.support}
-//         """
-// }
-
-
-        // path pyinr
-        // tuple val(data), val(dataconfig)
-        // // each met
-        // // each opt
-        // each coherence
-        // each swath
-        // each dem
-        // path dem_file
-        // path yaml_file
 workflow {
 
     main:
