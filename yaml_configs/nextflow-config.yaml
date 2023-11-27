@@ -3,6 +3,7 @@ data_setup: small # mini, small, medium, all
 coherence: [On, Off]
 swath: [On, Off]
 dem: [On, Off]
+pde_curve: [On, Off]
 inr_config: inr-config.yaml
 pre_processing_config: pre_processing-config.yaml
 dem_contours_config: dem-contours-config.yaml

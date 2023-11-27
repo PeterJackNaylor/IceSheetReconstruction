@@ -106,6 +106,7 @@ process INR {
         each swath
         each dem
         path dem_file
+        path pde_curve
         path polygon
         path yaml_file
 
@@ -125,6 +126,7 @@ process INR {
                 --coherence $coherence \
                 --swath $swath \
                 --dem $dem --dem_data $dem_file \
+                --pde_curv $pde_curve \
                 --polygon $polygon
         """
 }

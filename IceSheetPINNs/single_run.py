@@ -29,20 +29,26 @@ def parser_f():
     parser.add_argument(
         "--coherence",
         type=str,
-        help="Wether coherence (sample weight) is switched on or off",
+        help="Whether coherence (sample weight) is switched on or off",
     )
     parser.add_argument(
-        "--swath", type=str, help="Wether swath for validation is switched on or off"
+        "--swath", type=str, help="Whether swath for validation is switched on or off"
     )
     parser.add_argument(
-        "--dem", type=str, help="Wether DEM is added to help border effects, on or off"
+        "--dem", type=str, help="Whether DEM is added to help border effects, on or off"
     )
     parser.add_argument("--dem_data", type=str, help="Dem path")
+    parser.add_argument(
+        "--pde_curve",
+        type=str,
+        help="Whether to add a PDE for the curvature, on or off",
+    )
     parser.add_argument("--polygon", type=str, help="Polygon path")
     args = parser.parse_args()
     args.coherence = args.coherence == "true"
     args.swath = args.swath == "true"
     args.dem = args.dem == "true"
+    args.pde_curve = args.pde_curve == "true"
 
     return args
 
@@ -89,7 +95,7 @@ def plot(data, model, polygon, step_xy, step_t, name):
     return np.column_stack(time_predictions)
 
 
-def single_run(yaml_params, data, name, coherence, swath, dem, dem_path):
+def setup_hp(yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve):
     model_hp = pinns.read_yaml(yaml_params)
     gpu = torch.cuda.is_available()
     # device = "cuda" if gpu else "cpu"
@@ -98,6 +104,10 @@ def single_run(yaml_params, data, name, coherence, swath, dem, dem_path):
     bs = model_hp.losses["mse"]["bs"]
     model_hp.max_iters = ceil(n // bs) * model_hp.epochs
     model_hp.test_frequency = ceil(n // bs) * model_hp.test_epochs
+    model_hp.learning_rate_decay["step"] = (
+        ceil(n // bs) * model_hp.learning_rate_decay["epoch"]
+    )
+    model_hp.cosine_anealing["step"] = ceil(n // bs) * model_hp.cosine_anealing["epoch"]
     model_hp.gpu = gpu
     model_hp.verbose = True
     model_hp.coherence = coherence
@@ -107,12 +117,24 @@ def single_run(yaml_params, data, name, coherence, swath, dem, dem_path):
         model_hp.dem_data = dem_path
     else:
         del model_hp.losses["dem"]
+    if not pde_curve:
+        del model_hp.losses["pde_curve"]
+
     model_hp.pth_name = f"{name}.pth"
     model_hp.npz_name = f"{name}.npz"
+    return model_hp
+
+
+def single_run(yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve):
+    model_hp = setup_hp(
+        yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve
+    )
 
     return_dataset_fn = partial(return_dataset, data=data)
     Model_cl = pinns.models.INR
-    NN, model_hp = pinns.train(model_hp, IceSheet, return_dataset_fn, Model_cl, gpu=gpu)
+    NN, model_hp = pinns.train(
+        model_hp, IceSheet, return_dataset_fn, Model_cl, gpu=model_hp.gpu
+    )
     return NN, model_hp
 
 
@@ -163,8 +185,6 @@ def evaluation(model, time_predictions, step_t, name):
     for v, n in zip(variables, names):
         results.loc[0, n] = v
     results.to_csv(f"{name}.csv")
-
-    #
 
 
 def plot_NN(NN, model_hp, name):
@@ -230,7 +250,14 @@ def main():
 
     data = np.load(opt.data)
     NN, model_hp = single_run(
-        opt.yaml_file, data, opt.name, opt.coherence, opt.swath, opt.dem, opt.dem_data
+        opt.yaml_file,
+        data,
+        opt.name,
+        opt.coherence,
+        opt.swath,
+        opt.dem,
+        opt.dem_data,
+        opt.pde_curve,
     )
     step_t = 4
     step_xy = 0.05

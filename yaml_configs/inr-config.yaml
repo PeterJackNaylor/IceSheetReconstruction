@@ -1,7 +1,7 @@
 #training
 epochs: 200 #180 #00
 normalise_targets: True
-test_epochs: 10
+test_epochs: 1 #10
 save_model: True
 seed: 42
 train_fraction: 0.8
@@ -9,7 +9,7 @@ train_fraction: 0.8
 #Models
 model:
   name: RFF #or RFF/SIREN/WIRES
-  hidden_nlayers: 4
+  hidden_nlayers: 5
   hidden_width: 256
   scale: 1
   skip: False
@@ -36,6 +36,15 @@ losses:
     lambda: 1.e-1
     method: dem
     temporal_causality: False
+  pde_curve:
+    report: True
+    bs: 8192
+    loss_balancing: True
+    lambda: 1.e-1
+    temporal_causality: True
+    method: pde_curve
+    penalty: L1
+    epsilon: 1.e-1
 
   gradient_lat:
     report: True
@@ -61,6 +70,15 @@ losses:
     bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
     method: gradient_time
     loss_balancing: False #wether to be included in loss balancing
+  gradient_time_L1:
+    report: True
+    log: True
+    lambda: 1.e-1
+    temporal_causality: False
+    bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
+    method: gradient_time
+    loss_balancing: False
+    penalty: L1
 
   # mae:
   #   report: False
@@ -106,13 +124,13 @@ clip_gradients: True
 #   gamma: 0.1
 learning_rate_decay:
   status: True
-  step: 2000
-  gamma: 0.9 # 0.9
+  epoch: 20
+  gamma: 0.7 # 0.9
 
 cosine_anealing:
   status: False
   min_eta: 0
-  step: 500
+  epoch: 500
 
 
 optuna:

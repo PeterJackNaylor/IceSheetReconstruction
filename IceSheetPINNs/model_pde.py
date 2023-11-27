@@ -3,7 +3,7 @@ import pinns
 import numpy as np
 
 
-def spatial_temporal_grad(model, Lat, Lon, t):
+def spatial_temporal_grad(model, Lat, Lon, t, need_hessian):
     torch.set_grad_enabled(True)
     Lat.requires_grad_(True)
     Lon.requires_grad_(True)
@@ -12,7 +12,13 @@ def spatial_temporal_grad(model, Lat, Lon, t):
     du_dLat = pinns.gradient(u, Lat)
     du_dLon = pinns.gradient(u, Lon)
     du_dt = pinns.gradient(u, t)
-    return du_dLat, du_dLon, du_dt
+    if not need_hessian:
+        return du_dLat, du_dLon, du_dt
+    else:
+        du2_dLat2 = pinns.gradient(du_dLat, Lat)
+        du2_dLonLat = pinns.gradient(du_dLon, Lat)
+        du2_dLon2 = pinns.gradient(du_dLon, Lon)
+        return du_dLat, du_dLon, du_dt, du2_dLat2, du2_dLon2, du2_dLonLat
 
 
 class IceSheet(pinns.DensityEstimator):
@@ -34,7 +40,23 @@ class IceSheet(pinns.DensityEstimator):
                 temporal_scheme=temporal_scheme,
                 M=M,
             )
-            grad_lat, grad_lon, grad_t = spatial_temporal_grad(self.model, Lat, Lon, t)
+            if self.need_hessian:
+                (
+                    grad_lat,
+                    grad_lon,
+                    grad_t,
+                    grad_lat2,
+                    grad_lon2,
+                    grad_lonlat,
+                ) = spatial_temporal_grad(self.model, Lat, Lon, t, True)
+                self.grad_lon2 = grad_lat2
+                self.grad_lat2 = grad_lon2
+                self.grad_lonlat = grad_lonlat
+            else:
+                grad_lat, grad_lon, grad_t = spatial_temporal_grad(
+                    self.model, Lat, Lon, t, False
+                )
+
             self.grad_lat = grad_lat
             self.grad_lon = grad_lon
             self.grad_t = grad_t
@@ -75,7 +97,18 @@ class IceSheet(pinns.DensityEstimator):
 
         return z_hat - z
 
+    def pde_curve(self, z, z_hat, weight):
+        self.compute_grads()
+        eps = self.hp.losses["pde_curve"]["epsilon"]
+        D = self.grad_lon2 * self.grad_lat2 - self.grad_lonlat**2
+        relu = torch.nn.ReLU()
+        tanh = torch.nn.Tanh()
+
+        return tanh(eps * relu(D) * relu(self.grad_lon2))
+
     def fit(self):
+        self.need_hessian = "pde_curve" in self.hp.losses
+
         self.autocasting()
         scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
         self.setup_optimizer()
@@ -106,13 +139,13 @@ class IceSheet(pinns.DensityEstimator):
                 self.loss_balancing()
                 loss = self.sum_loss(self.loss_values, self.lambdas_scalar)
             scaler.scale(loss).backward()
-            # loss.backward()
             self.clip_gradients()
 
-            # self.optimizer.step()
             scaler.step(self.optimizer)
+            scale = scaler.get_scale()
             scaler.update()
-            if self.scheduler_status:
+            skip_lr_sched = scale > scaler.get_scale()
+            if self.scheduler_status and not skip_lr_sched:
                 self.scheduler_update()
             if self.hp.verbose:
                 self.update_description_bar(iterators)

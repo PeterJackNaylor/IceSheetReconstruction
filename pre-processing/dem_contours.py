@@ -38,18 +38,20 @@ def load(folder):
     return full_data[:, :2]
 
 
-def plot_polygon(point_support, points):
-    plt.scatter(*zip(*points), s=1)
+def plot_polygon(point_support, points, name):
+    plt.scatter(points[:, 1], points[:, 0], s=0.1)
     # Check if the alpha shape is a Polygon or a MultiPolygon
     if isinstance(point_support, Polygon):
         # If it is a Polygon, extract its exterior boundary
         x, y = point_support.exterior.coords.xy
-        plt.plot(x, y)
+        plt.plot(y, x)
     else:
         # If it is a MultiPolygon, iterate over its constituent polygons
         for polygon in point_support.geoms:
             x, y = polygon.exterior.coords.xy
-            plt.plot(x, y, color="red")
+            plt.plot(y, x, color="red")
+    plt.savefig(f"{name}.png")
+    plt.close("all")
 
 
 def generate_polygones(point_support, distance, xfact=1, yfact=2, smoothing=5):
@@ -68,16 +70,6 @@ def generate_polygones(point_support, distance, xfact=1, yfact=2, smoothing=5):
     )
     buffer_polygon = scaled_polygon.buffer(distance + smoothing).buffer(-smoothing)
     return final_polygon, scaled_polygon, buffer_polygon
-
-
-def plot_something(final_polygon, buffer_polygon, name):
-    plt.figure()
-    x, y = final_polygon.exterior.coords.xy
-    plt.plot(x, y, color="blue")
-    x, y = buffer_polygon.exterior.coords.xy
-    plt.plot(x, y, color="red")
-    plt.savefig(f"{name}_buffer.png")
-    plt.close("all")
 
 
 def add_dem(path, buffer_polygon, final_polygon):
@@ -103,14 +95,24 @@ def add_dem(path, buffer_polygon, final_polygon):
     return dem_points
 
 
+def plot_only_contours(final_polygon, name):
+    plt.figure()
+    x, y = final_polygon.exterior.coords.xy
+    plt.plot(y, x, color="blue")
+    plt.savefig(f"{name}_smoothed.png")
+    plt.close("all")
+
+
 def plot_dem(dem, final_polygon, buffer_polygon, name):
     plt.figure()
-    plt.scatter(dem[:, 0], dem[:, 1], c=dem[:, 2], s=0.1)
     x, y = final_polygon.exterior.coords.xy
     plt.plot(y, x, color="blue")
     x, y = buffer_polygon.exterior.coords.xy
     plt.plot(y, x, color="red")
+    plt.savefig(f"{name}_buffer.png")
+    plt.scatter(dem[:, 1], dem[:, 0], c=dem[:, 2], s=0.1)
     plt.savefig(f"{name}_inside.png")
+    plt.close("all")
 
 
 def get_dem_points(name_dem: str):
@@ -133,16 +135,19 @@ def main():
     final_polygon, _, buffer_polygon = generate_polygones(
         alpha_shape, opt.p.distance, opt.p.xfact, opt.p.yfact, opt.p.smoothing
     )
-    with open(opt.p.polygon_name, "wb") as poly_file:
-        pickle.dump(final_polygon, poly_file, pickle.HIGHEST_PROTOCOL)
 
     dem_points = add_dem(opt.p.dem_path, buffer_polygon, final_polygon)
 
-    if opt.p.plot:
-        plot_polygon(alpha_shape, points)
-        plt.savefig(f"{opt.p.name}.png")
+    with open(opt.p.polygon_name, "wb") as poly_file:
+        # for visualising purposes only.
+        final_polygon_smoothed = final_polygon.buffer(opt.p.smoothing).buffer(
+            -opt.p.smoothing
+        )
+        pickle.dump(final_polygon_smoothed, poly_file, pickle.HIGHEST_PROTOCOL)
 
-        plot_something(final_polygon, buffer_polygon, opt.p.name)
+    if opt.p.plot:
+        plot_polygon(alpha_shape, points, opt.p.name)
+        plot_only_contours(final_polygon_smoothed, opt.p.name)
         plot_dem(dem_points, final_polygon, buffer_polygon, opt.p.name)
     np.save(f"{opt.p.name}.npy", dem_points)
 
