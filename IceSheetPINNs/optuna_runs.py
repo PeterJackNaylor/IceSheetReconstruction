@@ -32,7 +32,7 @@ def objective_optuna(trial, model_hp, data_fn):
     model_hp.npz_name = f"multiple/optuna_{trial.number}.npz"
 
     NN, model_hp = pinns.train(
-        model_hp, IceSheet, data_fn, pinns.models.INR, gpu=model_hp.gpu
+        model_hp, IceSheet, data_fn, pinns.models.INR, trial=trial, gpu=model_hp.gpu
     )
     scores = min(NN.test_scores)
     return scores

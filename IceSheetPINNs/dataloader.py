@@ -28,19 +28,20 @@ def split_train(data, seed, train_fraction, swath=True):
 
 
 def return_dataset(hp, data, gpu=True):
+    # [lt, lat, lon, z, swath_id, coherence]
     idx_train, idx_test = split_train(
         data,
         hp.seed,
         hp.train_fraction,
         swath=hp.swath,
     )
-    axis_with = np.array([0, 1, 3, 5])
-    axis_without = np.array([0, 1, 3])
+    axis_with = np.array([0, 1, 2, 5])
+    axis_without = np.array([0, 1, 2])
     axis = axis_with if hp.coherence else axis_without
 
     samples_train = data[idx_train][:, axis]
     samples_test = data[idx_test][:, axis_without]
-    targets = data[:, 2:3]
+    targets = data[:, 3:4]
 
     data_train = LaLoZTC(
         samples_train,
@@ -77,8 +78,24 @@ def return_dataset(hp, data, gpu=True):
     return data_train, data_test
 
 
-class LaLoZTC(pinns.DataPlaceholder):
-    # [lat, lon, z, t, swath_id, coherence]
+class dtypedData(pinns.DataPlaceholder):
+    def setup_cuda(self, gpu):
+        if gpu:
+            dtype = torch.float32
+            device = "cuda"
+        else:
+            dtype = torch.bfloat32
+            device = "cpu"
+
+        self.samples = self.samples.to(device, dtype=dtype)
+        if self.need_target:
+            self.targets = self.targets.to(device, dtype=dtype)
+        self.device = device
+        self.dtype = dtype
+
+
+class LaLoZTC(dtypedData):
+    # [t, lat, lon, z, swath_id, coherence]
     def __init__(
         self,
         samples,
@@ -120,7 +137,7 @@ class LaLoZTC(pinns.DataPlaceholder):
         self.setup_batch_idx()
 
 
-class LaLoZ(pinns.DataPlaceholder):
+class LaLoZ(dtypedData):
     # [lat, lon, z]
     def __init__(
         self,

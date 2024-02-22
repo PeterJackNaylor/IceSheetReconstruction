@@ -38,7 +38,7 @@ def get_dataset_from_xarray(path, swath_id=0):
     xa = xarray.open_dataset(path)
     df = xa.to_dataframe()
     df["Swath"] = swath_id
-    df = df[["Lat", "Lon", "Height", "Time", "Swath", "Coherence"]]
+    df = df[["Time", "Lat", "Lon", "Height", "Swath", "Coherence"]]
     df = df[df.index.get_level_values("d2") == 0]
     df = df.reset_index(drop=True)
     df.Time = set_time(df.Time)
@@ -72,13 +72,13 @@ def main():
     data_setup = options.data_setup
 
     if data_setup == "mini":
-        year_start, year_end = 2016, 2016
-        month_start, month_end = 1, 3
+        year_start, year_end = 2014, 2014
+        month_start, month_end = 3, 7
     elif data_setup == "small":
-        year_start, year_end = 2011, 2011
+        year_start, year_end = 2014, 2014
         month_start, month_end = 1, 12
     elif data_setup == "medium":
-        year_start, year_end = 2011, 2012
+        year_start, year_end = 2013, 2014
         month_start, month_end = 1, 12
     elif data_setup == "all":
         year_start, year_end = 2010, 2022

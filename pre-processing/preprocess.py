@@ -34,7 +34,7 @@ def save(npy):
 def exclude_outliers(
     data: np.array,
     std_multiple: float,
-    time_step: int,
+    time_step: float,
     grid_size_m: int,
     grid_overlap_m: int,
 ):
@@ -44,11 +44,11 @@ def exclude_outliers(
     proj = pyproj.Proj(proj="stere", lat_0=90, lon_0=0)
 
     points = np.copy(data)
-    points[:, 0:2] = np.column_stack(proj(data[:, 1], data[:, 0]))
+    points[:, 1:3] = np.column_stack(proj(data[:, 2], data[:, 1]))
 
     # Define the grid
-    x_min, y_min = points[:, 0].min(), points[:, 1].min()
-    x_max, y_max = points[:, 0].max(), points[:, 1].max()
+    x_min, y_min = points[:, 1].min(), points[:, 2].min()
+    x_max, y_max = points[:, 1].max(), points[:, 2].max()
 
     # Create the grid
     x_coords = np.arange(x_min, x_max, grid_size_m[0] - grid_overlap_m[0])
@@ -62,12 +62,13 @@ def exclude_outliers(
 
     cells_with_0 = 0
     cells_with_1 = 0
-
-    for t in tqdm(range(floor(data[:, 3].min()), ceil(data[:, 3].max()), time_step)):
+    time_range = np.arange(floor(data[:, 0].min()), ceil(data[:, 0].max()), time_step)
+    for i in tqdm(range(time_range.shape[0])):
+        t = time_range[i]
         # Find the nearest grid point for each point within t - time_step
-        within_t = np.logical_and(points[:, 3] > t, points[:, 3] <= t + time_step)
+        within_t = np.logical_and(points[:, 0] > t, points[:, 0] <= t + time_step)
         points_within_t = points[within_t]
-        _, indices = tree.query(points_within_t[:, :2])
+        _, indices = tree.query(points_within_t[:, 1:3])
 
         # Initialize arrays for the mean and std of each cell
         mean_values = np.zeros(len(grid_points))
@@ -81,10 +82,10 @@ def exclude_outliers(
 
             # Get the points within the current cell
             cell_points = points_within_t[
-                (points_within_t[:, 0] >= cell_x_min)
-                & (points_within_t[:, 0] < cell_x_max)
-                & (points_within_t[:, 1] >= cell_y_min)
-                & (points_within_t[:, 1] < cell_y_max)
+                (points_within_t[:, 1] >= cell_x_min)
+                & (points_within_t[:, 1] < cell_x_max)
+                & (points_within_t[:, 2] >= cell_y_min)
+                & (points_within_t[:, 2] < cell_y_max)
             ]
 
             # Calculate the mean and std of the points within the current cell
@@ -94,11 +95,11 @@ def exclude_outliers(
                 std_values[i] = np.nan
             elif len(cell_points) == 1:
                 cells_with_1 += 1
-                mean_values[i] = cell_points[:, 2]
-                std_values[i] = cell_points[:, 2]
+                mean_values[i] = cell_points[:, 3]
+                std_values[i] = cell_points[:, 3]
             else:
-                mean_values[i] = np.mean(cell_points[:, 2])
-                std_values[i] = np.std(cell_points[:, 2])
+                mean_values[i] = np.mean(cell_points[:, 3])
+                std_values[i] = np.std(cell_points[:, 3])
 
         # Now you can create a boolean array that indicates whether
         # each point is within three standard deviations of the mean of its cell
@@ -106,9 +107,9 @@ def exclude_outliers(
 
         # Check if the point is within three standard deviations of the mean of its cell
         within_threshold = np.logical_and(
-            points_within_t[:, 2]
+            points_within_t[:, 3]
             >= mean_values[indices] - std_multiple * std_values[indices],
-            points_within_t[:, 2]
+            points_within_t[:, 3]
             <= mean_values[indices] + std_multiple * std_values[indices],
         )
         tt = outliers[within_t]

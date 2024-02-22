@@ -1,7 +1,7 @@
 #training
-epochs: 200 #180 #00
+epochs: 200 #200 #180 #00
 normalise_targets: True
-test_epochs: 1 #10
+test_epochs: 10
 save_model: True
 seed: 42
 train_fraction: 0.8
@@ -9,10 +9,10 @@ train_fraction: 0.8
 #Models
 model:
   name: RFF #or RFF/SIREN/WIRES
-  hidden_nlayers: 5
+  hidden_nlayers: 6
   hidden_width: 256
-  scale: 1
-  skip: False
+  scale: 0.5
+  skip: True
   ## RFF specific
   mapping_size: 256
   activation: tanh
@@ -43,13 +43,13 @@ losses:
     lambda: 1.e-1
     temporal_causality: True
     method: pde_curve
-    penalty: L1
+    penalty: L2
     epsilon: 1.e-1
 
   gradient_lat:
     report: True
     log: True
-    lambda: 1.e-1
+    lambda: 1.e-3
     temporal_causality: False
     bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
     method: gradient_lat
@@ -57,7 +57,7 @@ losses:
   gradient_lon:
     report: True
     log: True
-    lambda: 1.e-1
+    lambda: 1.e-3
     temporal_causality: False
     bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
     method: gradient_lon
@@ -73,7 +73,7 @@ losses:
   gradient_time_L1:
     report: True
     log: True
-    lambda: 1.e-1
+    lambda: 10
     temporal_causality: False
     bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
     method: gradient_time
@@ -134,5 +134,5 @@ cosine_anealing:
 
 
 optuna:
-  patience: 10000
-  trials: 100
+  patience: 5000
+  trials: 30

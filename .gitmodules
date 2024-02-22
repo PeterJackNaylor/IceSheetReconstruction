@@ -1,4 +1,4 @@
-[submodule "MyPINNs"]
-	path = MyPINNs
-	url = https://github.com/PeterJackNaylor/MyPINNs.git
+[submodule "INR4torch"]
+	path = INR4torch
+	url = https://github.com/PeterJackNaylor/INR4torch.git
         branch = master

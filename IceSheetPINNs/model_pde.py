@@ -3,12 +3,12 @@ import pinns
 import numpy as np
 
 
-def spatial_temporal_grad(model, Lat, Lon, t, need_hessian):
+def spatial_temporal_grad(model, t, Lat, Lon, need_hessian):
     torch.set_grad_enabled(True)
     Lat.requires_grad_(True)
     Lon.requires_grad_(True)
     t.requires_grad_(True)
-    u = model(Lat, Lon, t)
+    u = model(t, Lat, Lon)
     du_dLat = pinns.gradient(u, Lat)
     du_dLon = pinns.gradient(u, Lon)
     du_dt = pinns.gradient(u, t)
@@ -48,13 +48,13 @@ class IceSheet(pinns.DensityEstimator):
                     grad_lat2,
                     grad_lon2,
                     grad_lonlat,
-                ) = spatial_temporal_grad(self.model, Lat, Lon, t, True)
+                ) = spatial_temporal_grad(self.model, t, Lat, Lon, True)
                 self.grad_lon2 = grad_lat2
                 self.grad_lat2 = grad_lon2
                 self.grad_lonlat = grad_lonlat
             else:
                 grad_lat, grad_lon, grad_t = spatial_temporal_grad(
-                    self.model, Lat, Lon, t, False
+                    self.model, t, Lat, Lon, False
                 )
 
             self.grad_lat = grad_lat
@@ -90,8 +90,7 @@ class IceSheet(pinns.DensityEstimator):
             temporal_scheme=temporal_scheme,
             M=M,
         )
-
-        sample_dem = torch.column_stack([latlon, t])
+        sample_dem = torch.column_stack([t, latlon])
         sample_dem.requires_grad_(False)
         z_hat = self.model(sample_dem)
 
@@ -157,3 +156,11 @@ class IceSheet(pinns.DensityEstimator):
             if break_loop:
                 break
         self.convert_last_loss_value()
+
+    def autocasting(self):
+        if self.device == "cpu":
+            dtype = torch.bfloat32
+        else:
+            dtype = torch.float32
+        self.use_amp = False
+        self.dtype = dtype

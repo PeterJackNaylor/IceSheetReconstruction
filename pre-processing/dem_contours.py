@@ -16,10 +16,6 @@ def parser_f():
     parser = argparse.ArgumentParser(
         description="Generating dem point for contour of Ice Sheet",
     )
-    parser.add_argument(
-        "--data",
-        type=str,
-    )
     parser.add_argument("--params", type=str, help="Yaml file path")
 
     args = parser.parse_args()
@@ -35,7 +31,7 @@ def load(folder):
         array = get_dataset_from_xarray(f)
         list_arrays.append(array)
     full_data = np.concatenate(list_arrays, axis=0)
-    return full_data[:, :2]
+    return full_data[:, 1:3]
 
 
 def plot_polygon(point_support, points, name):
@@ -125,7 +121,6 @@ def main():
     opt = parser_f()
 
     points = load(opt.p.one_month_data)
-
     # Select 1/100 points at random
     indices = np.random.choice(
         points.shape[0], size=points.shape[0] // opt.p.factor, replace=False

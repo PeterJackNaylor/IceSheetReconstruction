@@ -24,7 +24,15 @@ def params_check(k, var) {
     if (var instanceof String){
         inp = var.padRight(74)
     } else {
-        inp = var.join (', ').padRight(74)
+        if (var instanceof Boolean){
+            if (var){
+                inp = "true".padRight(74)
+            } else {
+                inp = "false".padRight(74)
+            }
+        } else {
+            inp = var.join (', ').padRight(74)
+        }
     }
     return "= ${key}=\n=${underline}=\n= ${inp}=\n=${space}="
 }
@@ -90,7 +98,12 @@ process DemFile {
         """
 }
 
-pyinr = file("IceSheetPINNs/single_run.py")
+if (params.optuna){
+    pyinr = file("IceSheetPINNs/optuna_runs.py")
+} else {
+    pyinr = file("IceSheetPINNs/single_run.py")
+}
+
 params_inr = file("yaml_configs/" + params.inr_config)
 
 process INR {
@@ -106,19 +119,19 @@ process INR {
         each swath
         each dem
         path dem_file
-        path pde_curve
+        each pde_curve
         path polygon
         path yaml_file
 
 
     output:
-        tuple path("${name}.pth"), path("${name}.npz")
+        tuple path("${name}.pth"), path("${name}.npz"), val(name)
         path(name)
         path("${name}.csv")
         val(dataconfig)
 
     script:
-        name = "INR_${dataconfig}_Coh_${coherence}_Swa_${swath}_Dem_${dem}"
+        name = "INR_${dataconfig}_Coh_${coherence}_Swa_${swath}_Dem_${dem}_PDEc_${pde_curve}"
         """
             python $pyinr --data $data \
                 --name $name \
@@ -130,9 +143,37 @@ process INR {
                 --polygon $polygon
         """
 }
+
+validation_py = [
+    tuple("evaluation/validation_icebridge.py", "oib"),
+    tuple("evaluation/validation_Geosar.py", "geosar"),
+]
+
+process ExternalValidation {
+    publishDir "outputs/${dataconfig}/INR/${name}", overwrite: true, pattern: "*.csv"
+
+    input:
+        each val_tag
+        path validation_folder
+        tuple path(weight), path(npz), val(name)
+        val dataconfig
+
+    output:
+        tuple val(tag), path("${name}___${tag}.csv")
+
+    script:
+        validation_method = file(val_tag[0])
+        tag = val_tag[1]
+    """
+        python $validation_method --folder $validation_folder \
+                                  --weight $weight --npz $npz \
+                                  --save "${name}___${tag}.csv"
+    """
+}
+
 pyregroup = file("postprocessing/regroup_csv.py")
 
-process Regroup {
+process RegroupTraining {
     publishDir "outputs/${dataconfig}", overwrite: true
     input:
         path pyregroup
@@ -148,6 +189,26 @@ process Regroup {
         """
 }
 
+pyregroup_val = file("postprocessing/regroup_csv_validation.py")
+
+process RegroupValidation {
+    publishDir "outputs/${dataconfig}", overwrite: true
+    input:
+        path pyregroup
+        tuple val(tag), path(csvs)
+        val dataconfig
+
+    output:
+        path "${dataconfig}_${tag}.csv"
+
+    script:
+        """
+        python $pyregroup_val ${dataconfig}_${tag}
+        """
+}
+
+
+
 workflow {
 
     main:
@@ -155,7 +216,9 @@ workflow {
         ConvertNC2NPY(pyconvert, params.datapath, params.data_setup)
         Pre_process(pypreprocess, ConvertNC2NPY.output, params_preprocess)
         INR(pyinr, Pre_process.out, params.coherence, params.swath,
-            params.dem, DemFile.out[0], DemFile.out[1], params_inr)
-        Regroup(pyregroup, INR.out[2].collect(), INR.out[3].first())
-
+            params.dem, DemFile.out[0], params.pde_curve, DemFile.out[1],
+            params_inr)
+        ExternalValidation(validation_py, params.datapath_validation, INR.out[0], INR.out[3].first())
+        RegroupTraining(pyregroup, INR.out[2].collect(), INR.out[3].first())
+        RegroupValidation(pyregroup_val, ExternalValidation.out.groupTuple(by: 0), INR.out[3].first())
 }
