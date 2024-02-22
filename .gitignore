@@ -327,3 +327,4 @@ nf_meta
 *.npz
 *.pth
 outputs
+.vscode
