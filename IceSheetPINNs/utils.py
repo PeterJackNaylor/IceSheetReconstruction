@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
 import torch
 from shapely.geometry import Point
 from tqdm import tqdm
+from datetime import datetime
 
 
 def grid_on_polygon(poly, step):
@@ -58,3 +60,9 @@ def predict(array, model):
                 preds.append(pred)
     preds = torch.cat(preds)
     return preds
+
+
+def inverse_time(time_array):
+    start_time = pd.Timestamp(datetime(2010, 7, 1))
+    time_in_days = time_array * np.timedelta64(1, "D") + start_time
+    return time_in_days

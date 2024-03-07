@@ -72,7 +72,7 @@ class IceSheet(pinns.DensityEstimator):
 
     def gradient_time(self, z, z_hat, weight):
         self.compute_grads()
-        return self.grad_t / self.data.nv_samples[2][0]
+        return self.grad_t / self.data.nv_samples[2][1]
 
     def dem(self, z, z_hat, weight):
         ## return tvn loss over space and time

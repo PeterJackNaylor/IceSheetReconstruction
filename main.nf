@@ -90,7 +90,8 @@ process DemFile {
         val dataconfig
     output:
         path "DEM_Contours.npy"
-        path "envelop_polygon.pickle"
+        path "envelop_polygon_inner_smoothed.pickle"
+        path "envelop_polygon_inner.pickle"
         path "*.png"
     script:
         """
@@ -145,21 +146,24 @@ process INR {
 }
 
 validation_py = [
-    tuple("evaluation/validation_icebridge.py", "oib"),
-    tuple("evaluation/validation_Geosar.py", "geosar"),
+    tuple("evaluation/validation_icebridge.py", "OIB"),
+    tuple("evaluation/validation_Geosar.py", "GeoSAR"),
 ]
 
 process ExternalValidation {
     publishDir "outputs/${dataconfig}/INR/${name}", overwrite: true, pattern: "*.csv"
+    publishDir "outputs/${dataconfig}/INR/${name}/${tag}_plots", overwrite: true, pattern: "*.png"
 
     input:
         each val_tag
         path validation_folder
         tuple path(weight), path(npz), val(name)
         val dataconfig
+        path polygon_shape
 
     output:
         tuple val(tag), path("${name}___${tag}.csv")
+        path("*.png")
 
     script:
         validation_method = file(val_tag[0])
@@ -167,6 +171,7 @@ process ExternalValidation {
     """
         python $validation_method --folder $validation_folder \
                                   --weight $weight --npz $npz \
+                                  --shape $polygon_shape \
                                   --save "${name}___${tag}.csv"
     """
 }
@@ -218,7 +223,7 @@ workflow {
         INR(pyinr, Pre_process.out, params.coherence, params.swath,
             params.dem, DemFile.out[0], params.pde_curve, DemFile.out[1],
             params_inr)
-        ExternalValidation(validation_py, params.datapath_validation, INR.out[0], INR.out[3].first())
+        ExternalValidation(validation_py, params.datapath_validation, INR.out[0], INR.out[3].first(), DemFile.out[2])
         RegroupTraining(pyregroup, INR.out[2].collect(), INR.out[3].first())
-        RegroupValidation(pyregroup_val, ExternalValidation.out.groupTuple(by: 0), INR.out[3].first())
+        RegroupValidation(pyregroup_val, ExternalValidation.out[0].groupTuple(by: 0), INR.out[3].first())
 }

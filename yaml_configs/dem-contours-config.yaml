@@ -8,4 +8,5 @@ smoothing: 1
 factor: 10 # sub sampling factor
 plot: On
 name: DEM_Contours
-polygon_name: envelop_polygon.pickle
+polygon_name_inner: envelop_polygon_inner.pickle
+polygon_name_inner_smoothed: envelop_polygon_inner_smoothed.pickle

@@ -28,7 +28,7 @@ def split_train(data, seed, train_fraction, swath=True):
 
 
 def return_dataset(hp, data, gpu=True):
-    # [lt, lat, lon, z, swath_id, coherence]
+    # [t, lat, lon, z, swath_id, coherence]
     idx_train, idx_test = split_train(
         data,
         hp.seed,

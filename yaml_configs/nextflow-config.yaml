@@ -1,9 +1,9 @@
 datapath: /Data/pnaylor/data_ice_sheet
 datapath_validation: /Data/pnaylor/data_ice_sheet_validation
 data_setup: mini #small # mini, small, medium, all
-coherence: [On, Off]
-swath: [On, Off]
-dem: [On, Off]
+coherence: [On, Off] #[On, Off]
+swath: [On, Off] #[On, Off]
+dem: [On, Off] #[On, Off]
 pde_curve: [Off]
 optuna: On
 inr_config: inr-config.yaml

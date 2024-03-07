@@ -35,17 +35,20 @@ def load(folder):
 
 
 def plot_polygon(point_support, points, name):
-    plt.scatter(points[:, 1], points[:, 0], s=0.1)
+    plt.scatter(points[:, 1], points[:, 0], s=0.1, color="black")
+    plt.title("Data samples used to fit polygon")
+    plt.xlabel("Lon")
+    plt.ylabel("Lat")
     # Check if the alpha shape is a Polygon or a MultiPolygon
     if isinstance(point_support, Polygon):
         # If it is a Polygon, extract its exterior boundary
         x, y = point_support.exterior.coords.xy
-        plt.plot(y, x)
+        plt.plot(y, x, color="blue")
     else:
         # If it is a MultiPolygon, iterate over its constituent polygons
         for polygon in point_support.geoms:
             x, y = polygon.exterior.coords.xy
-            plt.plot(y, x, color="red")
+            plt.plot(y, x, color="blue")
     plt.savefig(f"{name}.png")
     plt.close("all")
 
@@ -94,19 +97,27 @@ def add_dem(path, buffer_polygon, final_polygon):
 def plot_only_contours(final_polygon, name):
     plt.figure()
     x, y = final_polygon.exterior.coords.xy
-    plt.plot(y, x, color="blue")
+    plt.plot(y, x, color="green")
+    plt.title("Smoothed data support")
+    plt.xlabel("Lon")
+    plt.ylabel("Lat")
     plt.savefig(f"{name}_smoothed.png")
     plt.close("all")
 
 
 def plot_dem(dem, final_polygon, buffer_polygon, name):
     plt.figure()
+    plt.xlabel("Lon")
+    plt.ylabel("Lat")
     x, y = final_polygon.exterior.coords.xy
-    plt.plot(y, x, color="blue")
+    plt.plot(y, x, color="blue", label="Tight data support")
     x, y = buffer_polygon.exterior.coords.xy
-    plt.plot(y, x, color="red")
+    plt.plot(y, x, color="red", label="Data support with buffer")
+    plt.title("Data support shapes")
     plt.savefig(f"{name}_buffer.png")
     plt.scatter(dem[:, 1], dem[:, 0], c=dem[:, 2], s=0.1)
+    plt.title("Data support shapes + DEM values")
+    plt.colorbar()
     plt.savefig(f"{name}_inside.png")
     plt.close("all")
 
@@ -133,12 +144,16 @@ def main():
 
     dem_points = add_dem(opt.p.dem_path, buffer_polygon, final_polygon)
 
-    with open(opt.p.polygon_name, "wb") as poly_file:
+    with open(opt.p.polygon_name_inner_smoothed, "wb") as poly_file:
         # for visualising purposes only.
         final_polygon_smoothed = final_polygon.buffer(opt.p.smoothing).buffer(
             -opt.p.smoothing
         )
         pickle.dump(final_polygon_smoothed, poly_file, pickle.HIGHEST_PROTOCOL)
+
+    with open(opt.p.polygon_name_inner, "wb") as poly_file:
+        # for support purposes only.
+        pickle.dump(final_polygon, poly_file, pickle.HIGHEST_PROTOCOL)
 
     if opt.p.plot:
         plot_polygon(alpha_shape, points, opt.p.name)

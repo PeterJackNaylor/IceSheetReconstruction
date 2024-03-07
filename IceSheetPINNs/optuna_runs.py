@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from functools import partial
 import pickle
+import shutil
 
 
 def sample_hp(hp, trial):
@@ -97,6 +98,9 @@ def main():
 
     npz = f"multiple/optuna_{id_trial}.npz"
     weights = f"multiple/optuna_{id_trial}.pth"
+
+    shutil.copyfile(npz, f"{opt.name}.npz")
+    shutil.copyfile(weights, f"{opt.name}.pth")
 
     NN = load_model(model_hp, weights, npz, data)
 

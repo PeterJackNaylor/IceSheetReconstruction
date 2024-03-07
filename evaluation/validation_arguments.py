@@ -24,6 +24,10 @@ def parser_f():
         type=str,
     )
     parser.add_argument(
+        "--shape",
+        type=str,
+    )
+    parser.add_argument(
         "--save",
         type=str,
     )
@@ -104,7 +108,7 @@ def inverse_time(time_array):
     return time_in_days
 
 
-def evaluate(targets, preds, time, hp):
+def evaluate(targets, preds, time):
 
     order = time.argsort()
 
@@ -116,13 +120,12 @@ def evaluate(targets, preds, time, hp):
         np.arange(time.shape[0]), np.unique(time, return_index=True)[1][1:]
     )
 
-    pred_unnormalised = preds * hp.nv_targets[0][1] + hp.nv_targets[0][0]
     results = pd.DataFrame(columns=["MAE", "MSE", "N"])
 
     for idx in indexes:
         actual_time = time[idx[0]]
         date_time = inverse_time(actual_time)
-        results.loc[date_time, "MSE"] = mse(targets[idx], pred_unnormalised[idx])
-        results.loc[date_time, "MAE"] = mae(targets[idx], pred_unnormalised[idx])
+        results.loc[date_time, "MSE"] = mse(targets[idx], preds[idx])
+        results.loc[date_time, "MAE"] = mae(targets[idx], preds[idx])
         results.loc[date_time, "N"] = targets[idx].shape[0]
     return results

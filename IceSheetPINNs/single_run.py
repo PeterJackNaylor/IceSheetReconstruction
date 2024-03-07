@@ -11,7 +11,7 @@ import matplotlib.pylab as plt
 import matplotlib.cm as cm
 from IceSheetPINNs.dataloader import return_dataset
 from IceSheetPINNs.model_pde import IceSheet
-from IceSheetPINNs.utils import grid_on_polygon, predict
+from IceSheetPINNs.utils import grid_on_polygon, predict, inverse_time
 import pickle
 
 
@@ -63,23 +63,23 @@ def plot(data, model, polygon, step_xy, step_t, name):
     vmin, vmax = 0, 1800
     extent = [grid[:, 1].min(), grid[:, 1].max(), grid[:, 0].min(), grid[:, 0].max()]
     results = np.zeros_like(grid[:, 0])
-    lat_nrm = model.data.nv_samples[0]
-    lon_nrm = model.data.nv_samples[1]
-    time_nrm = model.data.nv_samples[2]
+    time_nrm = model.data.nv_samples[0]
+    lat_nrm = model.data.nv_samples[1]
+    lon_nrm = model.data.nv_samples[2]
     z_nrm = model.data.nv_targets[0]
 
     grid[:, 0] = (grid[:, 0] - lat_nrm[0]) / lat_nrm[1]
     grid[:, 1] = (grid[:, 1] - lon_nrm[0]) / lon_nrm[1]
-    xyt = np.column_stack([grid[idx], results[idx].copy()])
+    xyt = np.column_stack([results[idx].copy(), grid[idx]])
 
-    time = data[:, 3]
+    time = data[:, 0]
     time_range = np.arange(time.min(), time.max(), step_t)
     times = time_range.copy()
     time_range = time_range.astype(int)
     times = (times - time_nrm[0]) / time_nrm[1]
     time_predictions = []
     for it in range(times.shape[0]):
-        xyt[:, 2] = times[it]
+        xyt[:, 0] = times[it]
         tensor_xyt = torch.from_numpy(xyt).to(model.device, dtype=model.dtype)
         prediction = predict(tensor_xyt, model)
         prediction = prediction.to("cpu", dtype=torch.float64).numpy()
@@ -87,9 +87,13 @@ def plot(data, model, polygon, step_xy, step_t, name):
         results[idx] = real_pred
         heatmap = results.copy().reshape(n, p, order="F")
         heatmap[heatmap == 0] = np.nan
-        plt.imshow(heatmap, extent=extent, vmin=vmin, vmax=vmax, aspect="auto")
+        date = str(inverse_time(time_range[it]).date())
+        plt.imshow(heatmap[::-1], extent=extent, vmin=vmin, vmax=vmax, aspect="auto")
+        plt.xlabel("Lon")
+        plt.ylabel("Lat")
+        plt.title(f"Altitude at {date}")
         plt.colorbar()
-        plt.savefig(f"{name}/heatmap_{time_range[it]:02d}.png")
+        plt.savefig(f"{name}/heatmap_{date}.png")
         plt.close()
         time_predictions.append(real_pred)
     return np.column_stack(time_predictions)
