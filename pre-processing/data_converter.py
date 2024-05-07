@@ -78,8 +78,8 @@ def main():
         year_start, year_end = 2014, 2014
         month_start, month_end = 1, 12
     elif data_setup == "medium":
-        year_start, year_end = 2013, 2014
-        month_start, month_end = 1, 12
+        year_start, year_end = 2013, 2015
+        month_start, month_end = 7, 6
     elif data_setup == "all":
         year_start, year_end = 2010, 2022
         month_start, month_end = 7, 12

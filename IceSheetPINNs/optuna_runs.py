@@ -4,6 +4,7 @@ from IceSheetPINNs.dataloader import return_dataset
 from IceSheetPINNs.model_pde import IceSheet
 import optuna
 import pinns
+from pinns.models import INR
 import numpy as np
 import torch
 from functools import partial
@@ -20,6 +21,8 @@ def sample_hp(hp, trial):
             1e2,
             log=True,
         )
+    hp.model["hidden_nlayer"] = trial.suggest_int("layers", 4, 8)
+    hp.model["scale"] = trial.suggest_float("scale", 1e-2, 4)
     return hp
 
 
@@ -33,9 +36,12 @@ def objective_optuna(trial, model_hp, data_fn):
     model_hp.npz_name = f"multiple/optuna_{trial.number}.npz"
 
     NN, model_hp = pinns.train(
-        model_hp, IceSheet, data_fn, pinns.models.INR, trial=trial, gpu=model_hp.gpu
+        model_hp, IceSheet, data_fn, INR, trial=trial, gpu=model_hp.gpu
     )
-    scores = min(NN.test_scores)
+    try:
+        scores = min(NN.test_scores)
+    except:
+        scores = np.finfo(float).max
     return scores
 
 
@@ -47,9 +53,9 @@ def load_model(model_hp, weights, npz_path, data):
     model_hp.nv_samples = [tuple(el) for el in tuple(npz["nv_samples"])]
     model_hp.nv_targets = [tuple(el) for el in tuple(npz["nv_targets"])]
 
-    if model_hp.model["name"] == "RFF":
-        B = npz["B"]
-        model_hp.B = torch.from_numpy(B).to(model_hp.device)
+    # if model_hp.model["name"] == "RFF":
+    #     B = npz["B"]
+    #     model_hp.B = torch.from_numpy(B).to(model_hp.device)
     model = pinns.models.INR(
         model_hp.model["name"],
         model_hp.input_size,
@@ -114,7 +120,10 @@ def main():
         pass
     time_preds = plot(data, NN, polygon, step_xy, step_t, opt.name + "/icesheet")
     evaluation(NN, time_preds, step_t, opt.name)
-    plot_optuna(study, opt.name)
+    try:
+        plot_optuna(study, opt.name)
+    except:
+        print("Optuna plots failed")
 
 
 def plot_optuna(study, name):

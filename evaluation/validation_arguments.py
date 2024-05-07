@@ -1,5 +1,6 @@
 import argparse
 import pinns
+from pinns.models import INR
 import torch
 import numpy as np
 from tqdm import trange
@@ -16,6 +17,10 @@ def parser_f():
         type=str,
     )
     parser.add_argument(
+        "--dataname",
+        type=str,
+    )
+    parser.add_argument(
         "--weight",
         type=str,
     )
@@ -24,7 +29,19 @@ def parser_f():
         type=str,
     )
     parser.add_argument(
-        "--shape",
+        "--tight_mask",
+        type=str,
+    )
+    parser.add_argument(
+        "--train_mask",
+        type=str,
+    )
+    parser.add_argument(
+        "--validation_mask",
+        type=str,
+    )
+    parser.add_argument(
+        "--mask",
         type=str,
     )
     parser.add_argument(
@@ -51,10 +68,10 @@ def load_model(weights, npz_path):
         model_hp.device = "cuda"
     else:
         model_hp.device = "cpu"
-    if model_hp.model["name"] == "RFF":
-        B = npz["B"]
-        model_hp.B = torch.from_numpy(B).to(model_hp.device)
-    model = pinns.models.INR(
+    # if model_hp.model["name"] == "RFF":
+    #     B = npz["B"]
+    #     model_hp.B = torch.from_numpy(B).to(model_hp.device)
+    model = INR(
         model_hp.model["name"],
         model_hp.input_size,
         output_size=model_hp.output_size,
@@ -102,30 +119,68 @@ def mse(x, y):
     return np.sqrt(((x - y) ** 2).mean())
 
 
+def median_diff(x, y):
+    return np.median(x - y)
+
+
+def std_diff(x, y):
+    return np.std(x - y)
+
+
 def inverse_time(time_array):
     start_time = pd.Timestamp(datetime(2010, 7, 1))
     time_in_days = time_array * np.timedelta64(1, "D") + start_time
     return time_in_days
 
 
-def evaluate(targets, preds, time):
-
+def evaluate(targets, preds, time, data_mask, names):
+    data_mask_n = np.ones(
+        shape=(data_mask.shape[0], data_mask.shape[1] + 1), dtype=data_mask.dtype
+    )
+    data_mask_n[:, 1:] = data_mask
+    data_mask = data_mask_n
+    names = ["All"] + names
     order = time.argsort()
 
     targets = targets[order]
     preds = preds[order]
+    data_mask = data_mask[order]
 
     time = time[order]
     indexes = np.split(
         np.arange(time.shape[0]), np.unique(time, return_index=True)[1][1:]
     )
+    row_indexes = np.zeros(targets.shape[0], dtype=bool)
+    columns = []
+    for name in names:
+        columns += [
+            f"MAE ({name})",
+            f"MSE ({name})",
+            f"MED ({name})",
+            f"STD ({name})",
+            f"N ({name})",
+        ]
+    results = pd.DataFrame(columns=columns)
+    for i, name in enumerate(names):
+        for idx in indexes:
+            actual_time = time[idx[0]]
+            date_time = inverse_time(actual_time)
+            index = row_indexes.copy()
+            index[idx] = True
 
-    results = pd.DataFrame(columns=["MAE", "MSE", "N"])
-
-    for idx in indexes:
-        actual_time = time[idx[0]]
-        date_time = inverse_time(actual_time)
-        results.loc[date_time, "MSE"] = mse(targets[idx], preds[idx])
-        results.loc[date_time, "MAE"] = mae(targets[idx], preds[idx])
-        results.loc[date_time, "N"] = targets[idx].shape[0]
+            y_true = targets[index & data_mask[:, i]]
+            y_pred = preds[index & data_mask[:, i]]
+            try:
+                MSE = mse(y_true, y_pred)
+                MAE = mae(y_true, y_pred)
+                MED = median_diff(y_true, y_pred)
+                STD = std_diff(y_true, y_pred)
+            except:
+                MSE = MAE = "Failed"
+            results.loc[date_time, f"MSE ({name})"] = MSE
+            results.loc[date_time, f"MAE ({name})"] = MAE
+            results.loc[date_time, f"MED ({name})"] = MED
+            results.loc[date_time, f"STD ({name})"] = STD
+            results.loc[date_time, f"N ({name})"] = y_true.shape[0]
+    results.loc["mean"] = results.mean(axis=0)
     return results

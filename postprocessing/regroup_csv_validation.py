@@ -11,11 +11,11 @@ def main():
         tab = pd.read_csv(f, index_col=0)
         f, ext = f.split(".")[0].split("___")
         _, _, _, coherence, _, swath, _, dem, _, pde_curve = f.split(".")[0].split("_")
-        tab.columns = [f"MAE ({f})", f"MSE ({f})", "N"]
-        if i != 0:
-            tab = tab.drop("N", axis=1)
-        else:
-            tab = tab[["N", f"MAE ({f})", f"MSE ({f})"]]
+        tab.columns = [f"{el} [{f}]" for el in tab.columns]
+        # if i != 0:
+        #     tab = tab.drop("N", axis=1)
+        # else:
+        #     tab = tab[["N", f"MAE ({f})", f"MSE ({f})"]]
         for key in tab.columns:
             if key != "N":
                 tab.loc["Coh", key] = coherence

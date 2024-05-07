@@ -106,9 +106,11 @@ class LaLoZTC(dtypedData):
         test=True,
         hp=None,
     ):
+        self.hp = hp
         self.test = test
         self.need_target = targets is not None
         self.input_size = samples.shape[1]
+        self.output_size = 1
         if hp.coherence:
             self.input_size -= 1
             normalise_last = test
@@ -136,6 +138,18 @@ class LaLoZTC(dtypedData):
         self.setup_cuda(gpu)
         self.setup_batch_idx()
 
+    def __getitem__(self, idx):
+        sample = self.samples[idx]
+        if not self.need_target:
+            # return sample
+            return {"x": sample}
+        target = self.targets[idx]
+        if not self.hp.coherence:
+            output = {"x": sample, "z": target}
+        else:
+            output = {"weight": sample[:, -1], "x": sample[:, :-1], "z": target}
+        return output
+
 
 class LaLoZ(dtypedData):
     # [lat, lon, z]
@@ -148,6 +162,7 @@ class LaLoZ(dtypedData):
         gpu=True,
         hp=None,
     ):
+        self.hp = hp
         self.test = False
         self.need_target = True
         self.input_size = samples.shape[1]

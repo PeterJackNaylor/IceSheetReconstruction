@@ -1,5 +1,5 @@
 #training
-epochs: 200 #200 #180 #00
+epochs: 60 #60 #200 #180 #00
 normalise_targets: True
 test_epochs: 10
 save_model: True
@@ -113,6 +113,7 @@ early_stopping:
 
 
 # optimizers
+optimizer: AdamW
 lr: 1.e-3
 eps: 1.e-8 #adam precision
 clip_gradients: True
@@ -135,4 +136,4 @@ cosine_anealing:
 
 optuna:
   patience: 5000
-  trials: 30
+  trials: 100

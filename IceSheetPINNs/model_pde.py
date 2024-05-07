@@ -22,6 +22,10 @@ def spatial_temporal_grad(model, t, Lat, Lon, need_hessian):
 
 
 class IceSheet(pinns.DensityEstimator):
+    def __init__(self, train, test, model, model_hp, gpu, trial=None):
+        self.need_hessian = "pde_curve" in model_hp.losses
+        super(IceSheet, self).__init__(train, test, model, model_hp, gpu, trial)
+
     def compute_grads(self):
         if not hasattr(self, "it_comp"):
             self.it_comp = 0
@@ -80,7 +84,7 @@ class IceSheet(pinns.DensityEstimator):
         temporal_scheme = self.hp.losses["dem"]["temporal_causality"]
         M = self.M if hasattr(self, "M") else None
 
-        latlon, z = next(self.data.dem_data)
+        batch = next(self.data.dem_data)
 
         t = pinns.gen_uniform(
             bs,
@@ -90,10 +94,10 @@ class IceSheet(pinns.DensityEstimator):
             temporal_scheme=temporal_scheme,
             M=M,
         )
-        sample_dem = torch.column_stack([t, latlon])
+        sample_dem = torch.column_stack([t, batch["x"]])
         sample_dem.requires_grad_(False)
         z_hat = self.model(sample_dem)
-
+        z = batch["z"]
         return z_hat - z
 
     def pde_curve(self, z, z_hat, weight):
@@ -104,58 +108,6 @@ class IceSheet(pinns.DensityEstimator):
         tanh = torch.nn.Tanh()
 
         return tanh(eps * relu(D) * relu(self.grad_lon2))
-
-    def fit(self):
-        self.need_hessian = "pde_curve" in self.hp.losses
-
-        self.autocasting()
-        scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
-        self.setup_optimizer()
-        self.setup_scheduler()
-        self.setup_losses()
-        self.setup_temporal_causality()
-        self.model.train()
-        self.best_test_score = np.inf
-        # best_it = 0
-        iterators = self.range(1, self.hp.max_iters + 1, 1)
-        for self.it in iterators:
-            self.optimizer.zero_grad()
-
-            data_batch = next(self.data)
-            with torch.autocast(
-                device_type=self.device, dtype=self.dtype, enabled=self.use_amp
-            ):
-                data = data_batch[0]
-                if self.hp.coherence:
-                    weights = data[:, -1]
-                    data = data[:, :-1]
-                else:
-                    weights = None
-                target_pred = self.model(data)
-                true_pred = data_batch[1]
-
-                self.compute_loss(true_pred, target_pred, weights)
-                self.loss_balancing()
-                loss = self.sum_loss(self.loss_values, self.lambdas_scalar)
-            scaler.scale(loss).backward()
-            self.clip_gradients()
-
-            scaler.step(self.optimizer)
-            scale = scaler.get_scale()
-            scaler.update()
-            skip_lr_sched = scale > scaler.get_scale()
-            if self.scheduler_status and not skip_lr_sched:
-                self.scheduler_update()
-            if self.hp.verbose:
-                self.update_description_bar(iterators)
-
-            self.test_and_maybe_save(self.it)
-            self.optuna_stop(self.it)
-            break_loop = False
-            break_loop = self.early_stop(self.it, loss, break_loop)
-            if break_loop:
-                break
-        self.convert_last_loss_value()
 
     def autocasting(self):
         if self.device == "cpu":

@@ -96,7 +96,19 @@ def plot(data, model, polygon, step_xy, step_t, name):
         plt.savefig(f"{name}/heatmap_{date}.png")
         plt.close()
         time_predictions.append(real_pred)
-    return np.column_stack(time_predictions)
+    time_predictions = np.column_stack(time_predictions)
+    results[idx] = time_predictions.std(axis=1) / step_t
+    time_std = results.copy().reshape(n, p, order="F")
+    time_std[time_std == 0] = np.nan
+    time_std = np.log(time_std + 1) / np.log(10)
+    plt.imshow(time_std[::-1], extent=extent, aspect="auto")
+    plt.xlabel("Lon")
+    plt.ylabel("Lat")
+    plt.title("Pixel wise np.log(STD) per day")
+    plt.colorbar()
+    plt.savefig(f"{name}/time_std.png")
+    plt.close()
+    return time_predictions
 
 
 def setup_hp(yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve):

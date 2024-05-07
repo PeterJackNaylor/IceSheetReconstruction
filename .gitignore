@@ -328,3 +328,7 @@ nf_meta
 *.pth
 outputs
 .vscode
+evaluation/xo_anal/
+*.png
+*.gif
+IceSheetPINNs/curve_estimations/

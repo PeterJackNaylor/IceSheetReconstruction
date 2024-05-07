@@ -90,8 +90,9 @@ process DemFile {
         val dataconfig
     output:
         path "DEM_Contours.npy"
-        path "envelop_polygon_inner_smoothed.pickle"
-        path "envelop_polygon_inner.pickle"
+        path "training_mask.pickle"
+        path "validation_mask.pickle"
+        path "tight_enveloppe.pickle"
         path "*.png"
     script:
         """
@@ -146,9 +147,37 @@ process INR {
 }
 
 validation_py = [
-    tuple("evaluation/validation_icebridge.py", "OIB"),
-    tuple("evaluation/validation_Geosar.py", "GeoSAR"),
+    tuple("evaluation/validation_icebridge.py", "OIB", "oib_within_petermann_ISRIN_time.npy"),
+    tuple("evaluation/validation_Geosar.py", "GeoSAR", "GeoSAR_Petermann_xband_prep.npy"),
 ]
+filter_data_mask = file("evaluation/filter_with_mask.py")
+process FilterExternalValidation {
+    input:
+        path py_filter
+        each val_tag
+        path validation_folder
+        path tight_mask
+        path train_mask
+        path validation_mask
+
+    output:
+        // tuple path(filepy_validation), val(tag), path("${tag}_mask.npy")
+        tuple val(filepy_validation), val(tag), path("${tag}_mask.npy"), val(dataname)
+
+    script:
+        filepy_validation = val_tag[0]
+        // filepy_validation = file(val_tag[0])
+        tag = val_tag[1]
+        dataname = val_tag[2]
+    """
+        python $py_filter --folder $validation_folder \
+                                --dataname $dataname \
+                                --tight_mask $tight_mask \
+                                --train_mask $train_mask \
+                                --validation_mask $validation_mask \
+                                --save ${tag}_mask.npy
+    """
+}
 
 process ExternalValidation {
     publishDir "outputs/${dataconfig}/INR/${name}", overwrite: true, pattern: "*.csv"
@@ -159,7 +188,9 @@ process ExternalValidation {
         path validation_folder
         tuple path(weight), path(npz), val(name)
         val dataconfig
-        path polygon_shape
+        path tight_mask
+        path train_mask
+        path validation_mask
 
     output:
         tuple val(tag), path("${name}___${tag}.csv")
@@ -168,11 +199,17 @@ process ExternalValidation {
     script:
         validation_method = file(val_tag[0])
         tag = val_tag[1]
+        masks = val_tag[2]
+        dataname = val_tag[3]
     """
         python $validation_method --folder $validation_folder \
+                                  --dataname $dataname \
                                   --weight $weight --npz $npz \
-                                  --shape $polygon_shape \
-                                  --save "${name}___${tag}.csv"
+                                  --tight_mask $tight_mask \
+                                  --train_mask $train_mask \
+                                  --validation_mask $validation_mask \
+                                  --mask $masks \
+                                  --save ${name}___${tag}.csv
     """
 }
 
@@ -223,7 +260,8 @@ workflow {
         INR(pyinr, Pre_process.out, params.coherence, params.swath,
             params.dem, DemFile.out[0], params.pde_curve, DemFile.out[1],
             params_inr)
-        ExternalValidation(validation_py, params.datapath_validation, INR.out[0], INR.out[3].first(), DemFile.out[2])
+        FilterExternalValidation(filter_data_mask, validation_py, params.datapath_validation, DemFile.out[3], DemFile.out[1], DemFile.out[2])
+        ExternalValidation(FilterExternalValidation.out, params.datapath_validation, INR.out[0], INR.out[3].first(), DemFile.out[3], DemFile.out[1], DemFile.out[2])
         RegroupTraining(pyregroup, INR.out[2].collect(), INR.out[3].first())
         RegroupValidation(pyregroup_val, ExternalValidation.out[0].groupTuple(by: 0), INR.out[3].first())
 }
