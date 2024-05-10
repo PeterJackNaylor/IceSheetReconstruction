@@ -1,4 +1,4 @@
-from utils import grid_on_polygon, inverse_time
+from .utils import grid_on_polygon, inverse_time
 import pickle
 from glob import glob
 import os
@@ -9,15 +9,10 @@ import matplotlib.animation as animation
 import numpy as np
 import matplotlib.pylab as plt
 from datetime import datetime
-from evaluation.validation_arguments import predict
+from evaluation.validation_arguments import predict, load_model
 
 
 def load_model_folder(folder, wd="."):
-    # if "medium" or "mini" not in folder:
-    #     from old_model import load_model
-    # else:
-    from validation_arguments import load_model
-
     weight = f"{wd}/{folder}.pth"
     npz = f"{wd}/{folder}.npz"
     return load_model(weight, npz)

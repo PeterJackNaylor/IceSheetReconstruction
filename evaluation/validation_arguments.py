@@ -64,9 +64,10 @@ def load_model(weights, npz_path):
     model_hp.gpu = bool(npz["gpu"])
     model_hp.normalise_targets = bool(npz["normalise_targets"])
     model_hp.losses = npz["losses"].item()
-    if model_hp.gpu:
+    if model_hp.gpu and torch.cuda.is_available():
         model_hp.device = "cuda"
     else:
+        model_hp.gpu = False
         model_hp.device = "cpu"
     # if model_hp.model["name"] == "RFF":
     #     B = npz["B"]
