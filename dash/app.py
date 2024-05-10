@@ -32,6 +32,7 @@ elif platform == "darwin":
 raw_data = f"{data_folder}/raw_data"
 polygon_paths = f"{data_folder}/masks"
 model_path = f"{data_folder}/models"
+outputs = f"{data_folder}/outputs"
 path_models = glob(f"{model_path}/*.npz")
 options_models = [os.path.basename(el).split(".")[0] for el in path_models]
 available_polygons = glob(f"{polygon_paths}/*.pickle")
@@ -336,7 +337,7 @@ def generate_gif(
             model_path,
         )
         writer = animation.PillowWriter(fps=5, metadata=dict(artist="Me"), bitrate=1800)
-        ani.save(f"{filename}.gif", writer=writer)
+        ani.save(f"{outputs}/{filename}.gif", writer=writer)
 
 
 if __name__ == "__main__":
