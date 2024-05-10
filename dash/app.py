@@ -22,7 +22,7 @@ from dash_utils import (
 import matplotlib.animation as animation
 
 if platform == "linux" or platform == "linux2":
-    data_folder = "/Data/pnaylor/dash_metadata/models"
+    data_folder = "/Data/pnaylor/dash_metadata/"
     port = 8050
     # linux
 elif platform == "darwin":
