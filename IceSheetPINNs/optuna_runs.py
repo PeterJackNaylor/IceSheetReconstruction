@@ -1,5 +1,5 @@
 import os
-from single_run import parser_f, setup_hp, plot, evaluation
+from single_run import parser_f, setup_hp, plot, evaluation, save_results
 from IceSheetPINNs.dataloader import return_dataset
 from IceSheetPINNs.model_pde import IceSheet
 import optuna
@@ -9,20 +9,40 @@ import numpy as np
 import torch
 from functools import partial
 import pickle
-import shutil
+
+# import shutil
+from pandas import DataFrame
 
 
 def sample_hp(hp, trial):
-    keys = [k for k in hp.losses.keys() if not hp.losses[k]["loss_balancing"]]
-    for k in keys:
+    # keys = [k for k in hp.losses.keys() if not hp.losses[k]["loss_balancing"]]
+    for k in ["gradient_lat", "gradient_lon"]:  # keys:
         hp.losses[k]["lambda"] = trial.suggest_float(
             f"l_{k}",
             1e-4,
             1e2,
             log=True,
         )
-    hp.model["hidden_nlayer"] = trial.suggest_int("layers", 4, 8)
-    hp.model["scale"] = trial.suggest_float("scale", 1e-2, 4)
+    if hp.model["name"] == "KAN":
+        hidden_layers = [1, 3]
+        hp.model["hidden_width"] = trial.suggest_int("hidden_width", 8, 32)
+    elif hp.model["name"] == "WIRES":
+        hp.model["omega0"] = trial.suggest_float("omega0", 1, 100, log=True)
+        hp.model["sigma0"] = trial.suggest_float("sigma0", 1, 100, log=True)
+        hidden_layers = [4, 7]
+    elif hp.model["name"] == "MFN":
+        hp.model["skip"] = False
+        hidden_layers = [4, 7]
+    else:
+        hp.model["scale"] = trial.suggest_float("scale", 1e-3, 10, log=True)
+        hidden_layers = [4, 7]
+
+    hp.model["hidden_nlayer"] = trial.suggest_int(
+        "layers", hidden_layers[0], hidden_layers[1]
+    )
+
+    hp.lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+
     return hp
 
 
@@ -46,17 +66,22 @@ def objective_optuna(trial, model_hp, data_fn):
 
 
 def load_model(model_hp, weights, npz_path, data):
-    npz = np.load(npz_path)
+    npz = np.load(npz_path, allow_pickle=True)
 
     model_hp.input_size = int(npz["input_size"])
     model_hp.output_size = int(npz["output_size"])
     model_hp.nv_samples = [tuple(el) for el in tuple(npz["nv_samples"])]
     model_hp.nv_targets = [tuple(el) for el in tuple(npz["nv_targets"])]
-
+    model_hp.model["hidden_nlayers"] = npz["model"].item()["hidden_nlayers"]
+    if model_hp.model["name"] == "KAN":
+        model_hp.model["hidden_width"] = npz["model"].item()["hidden_width"]
+    # model_hp.swath = npz["swath"].item()
+    # model_hp.coherence = npz["coherence"].item()
+    # model_hp.dem = npz["dem"].item()
     # if model_hp.model["name"] == "RFF":
     #     B = npz["B"]
     #     model_hp.B = torch.from_numpy(B).to(model_hp.device)
-    model = pinns.models.INR(
+    model = INR(
         model_hp.model["name"],
         model_hp.input_size,
         output_size=model_hp.output_size,
@@ -72,6 +97,22 @@ def load_model(model_hp, weights, npz_path, data):
     return NN
 
 
+def get_n_best_trials(study):
+    """
+    This function returns the sorted best trials from a study in Optuna.
+
+    Args:
+        study: The Optuna study object.
+
+    Returns:
+        A list containing the trials sorted by objective value (descending).
+    """
+    all_trials = study.trials  # Get all trials
+    sorted_trials = sorted(all_trials, key=lambda trial: trial.value, reverse=True)
+    out = [[el.number, el.values[0]] for el in sorted_trials]
+    return out  # Return the top n trials
+
+
 def main():
     opt = parser_f()
 
@@ -80,6 +121,7 @@ def main():
         opt.yaml_file,
         data,
         opt.name,
+        opt.model,
         opt.coherence,
         opt.swath,
         opt.dem,
@@ -100,26 +142,34 @@ def main():
 
     study.optimize(objective, n_trials=model_hp.optuna["trials"])
 
-    id_trial = study.best_trial.number
+    scores_id = get_n_best_trials(study)
+    DataFrame(scores_id, columns=["number", "value"]).to_csv(
+        f"{opt.name}__trial_scores.csv"
+    )
+    id_trial = scores_id[-1][0]
 
-    npz = f"multiple/optuna_{id_trial}.npz"
-    weights = f"multiple/optuna_{id_trial}.pth"
+    metrics = []
+    for trial in range(1, opt.k + 1):
+        id_trial = scores_id[-trial][0]
+        npz = f"multiple/optuna_{id_trial}.npz"
+        weights = f"multiple/optuna_{id_trial}.pth"
 
-    shutil.copyfile(npz, f"{opt.name}.npz")
-    shutil.copyfile(weights, f"{opt.name}.pth")
+        NN = load_model(model_hp, weights, npz, data)
 
-    NN = load_model(model_hp, weights, npz, data)
-
-    step_t = 4
-    step_xy = 0.05
-    with open(opt.polygon, "rb") as f:
-        polygon = pickle.load(f)
-    try:
-        os.mkdir(opt.name)
-    except:
-        pass
-    time_preds = plot(data, NN, polygon, step_xy, step_t, opt.name + "/icesheet")
-    evaluation(NN, time_preds, step_t, opt.name)
+        step_t = 4
+        step_xy = 0.05
+        with open(opt.polygon, "rb") as f:
+            polygon = pickle.load(f)
+        try:
+            os.mkdir(opt.name)
+        except:
+            pass
+        time_preds = plot(
+            data, NN, polygon, step_xy, step_t, opt.name + "/icesheet", trial=id_trial
+        )
+        scores = evaluation(NN, time_preds, step_t, opt.name)
+        metrics.append(scores)
+    save_results(metrics, scores_id[-opt.k :], opt.name)
     try:
         plot_optuna(study, opt.name)
     except:

@@ -20,12 +20,20 @@ def parser_f():
         "--dataname",
         type=str,
     )
+    # parser.add_argument(
+    #     "--weight",
+    #     type=str,
+    # )
+    # parser.add_argument(
+    #     "--npz",
+    #     type=str,
+    # )
     parser.add_argument(
-        "--weight",
+        "--scores_csv",
         type=str,
     )
     parser.add_argument(
-        "--npz",
+        "--multiple_folder",
         type=str,
     )
     parser.add_argument(
@@ -47,6 +55,11 @@ def parser_f():
     parser.add_argument(
         "--save",
         type=str,
+    )
+    parser.add_argument(
+        "--k",
+        default=5,
+        type=int,
     )
     args = parser.parse_args()
     return args

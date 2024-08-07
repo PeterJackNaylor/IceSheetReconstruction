@@ -1,3 +1,3 @@
 
 slip:
-	nextflow run main.nf -params-file yaml_configs/nextflow-config.yaml -resume -profile $(PROFILE)
+	nextflow run main.nf -params-file $(CONFIG) -resume -profile $(PROFILE)

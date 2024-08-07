@@ -1,7 +1,7 @@
 #training
-epochs: 60 #60 #200 #180 #00
+epochs: 5 #60 #200 #180 #00
 normalise_targets: True
-test_epochs: 10
+test_epochs: 1
 save_model: True
 seed: 42
 train_fraction: 0.8
@@ -21,6 +21,11 @@ model:
   # RWF Specific
   mean: 1
   std: 0.1
+  # WIRES Specific
+  omega0: 10
+  sigma0: 40
+  trainable: True
+
 
 # Lambda values in the loss
 validation_loss: mse
@@ -62,18 +67,18 @@ losses:
     bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
     method: gradient_lon
     loss_balancing: False #wether to be included in loss balancing
-  gradient_time:
-    report: True
-    log: True
-    lambda: 1.e-1
-    temporal_causality: False
-    bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
-    method: gradient_time
-    loss_balancing: False #wether to be included in loss balancing
+  # gradient_time:
+  #   report: True
+  #   log: True
+  #   lambda: 1.e-1
+  #   temporal_causality: False
+  #   bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
+  #   method: gradient_time
+  #   loss_balancing: False #wether to be included in loss balancing
   gradient_time_L1:
     report: True
     log: True
-    lambda: 10
+    lambda: 150
     temporal_causality: False
     bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
     method: gradient_time
@@ -136,4 +141,4 @@ cosine_anealing:
 
 optuna:
   patience: 5000
-  trials: 100
+  trials: 10

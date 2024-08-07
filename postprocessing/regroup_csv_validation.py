@@ -8,16 +8,19 @@ def main():
     tables = []
 
     for i, f in enumerate(files):
-        tab = pd.read_csv(f, index_col=0)
+        tab = pd.read_csv(f).mean(axis=0).to_frame().T
+        std = pd.read_csv(f).std(axis=0).to_frame().T
+        cols = [el + " (std)" for el in std.columns]
+        std.columns = cols
+        tab = pd.concat([tab, std], axis=1)
         f, ext = f.split(".")[0].split("___")
-        _, _, _, coherence, _, swath, _, dem, _, pde_curve = f.split(".")[0].split("_")
+        _, dataconfig, _, model, _, coherence, _, swath, _, dem, _, pde_curve = f.split(
+            "."
+        )[0].split("_")
         tab.columns = [f"{el} [{f}]" for el in tab.columns]
-        # if i != 0:
-        #     tab = tab.drop("N", axis=1)
-        # else:
-        #     tab = tab[["N", f"MAE ({f})", f"MSE ({f})"]]
         for key in tab.columns:
             if key != "N":
+                tab.loc["Model", key] = model
                 tab.loc["Coh", key] = coherence
                 tab.loc["Swa", key] = swath
                 tab.loc["Dem", key] = dem

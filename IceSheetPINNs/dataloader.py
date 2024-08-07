@@ -43,7 +43,7 @@ def return_dataset(hp, data, gpu=True):
     samples_test = data[idx_test][:, axis_without]
     targets = data[:, 3:4]
 
-    data_train = LaLoZTC(
+    data_train = TLaLoZC(
         samples_train,
         targets=targets[idx_train],
         nv_samples=None,
@@ -53,7 +53,7 @@ def return_dataset(hp, data, gpu=True):
         hp=hp,
     )
 
-    data_test = LaLoZTC(
+    data_test = TLaLoZC(
         samples_test,
         targets=targets[idx_test],
         nv_samples=data_train.nv_samples,
@@ -94,7 +94,7 @@ class dtypedData(pinns.DataPlaceholder):
         self.dtype = dtype
 
 
-class LaLoZTC(dtypedData):
+class TLaLoZC(dtypedData):
     # [t, lat, lon, z, swath_id, coherence]
     def __init__(
         self,

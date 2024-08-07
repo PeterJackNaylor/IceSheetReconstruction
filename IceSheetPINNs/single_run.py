@@ -27,6 +27,11 @@ def parser_f():
         help="Configuration yaml file for the INR hyper-parameters",
     )
     parser.add_argument(
+        "--model",
+        type=str,
+        help="Which model to use, RFF, SIREN, WIRES",
+    )
+    parser.add_argument(
         "--coherence",
         type=str,
         help="Whether coherence (sample weight) is switched on or off",
@@ -44,6 +49,12 @@ def parser_f():
         help="Whether to add a PDE for the curvature, on or off",
     )
     parser.add_argument("--polygon", type=str, help="Polygon path")
+    parser.add_argument(
+        "--k",
+        type=int,
+        default=5,
+        help="How many models to average to produce the score",
+    )
     args = parser.parse_args()
     args.coherence = args.coherence == "true"
     args.swath = args.swath == "true"
@@ -53,7 +64,7 @@ def parser_f():
     return args
 
 
-def plot(data, model, polygon, step_xy, step_t, name):
+def plot(data, model, polygon, step_xy, step_t, name, trial, save=False):
     try:
         os.mkdir(name)
     except:
@@ -85,17 +96,20 @@ def plot(data, model, polygon, step_xy, step_t, name):
         prediction = prediction.to("cpu", dtype=torch.float64).numpy()
         real_pred = prediction[:, 0] * z_nrm[1] + z_nrm[0]
         results[idx] = real_pred
-        heatmap = results.copy().reshape(n, p, order="F")
-        heatmap[heatmap == 0] = np.nan
-        date = str(inverse_time(time_range[it]).date())
-        plt.imshow(heatmap[::-1], extent=extent, vmin=vmin, vmax=vmax, aspect="auto")
-        plt.xlabel("Lon")
-        plt.ylabel("Lat")
-        plt.title(f"Altitude at {date}")
-        plt.colorbar()
-        plt.savefig(f"{name}/heatmap_{date}.png")
-        plt.close()
         time_predictions.append(real_pred)
+        if save:
+            heatmap = results.copy().reshape(n, p, order="F")
+            heatmap[heatmap == 0] = np.nan
+            date = str(inverse_time(time_range[it]).date())
+            plt.imshow(
+                heatmap[::-1], extent=extent, vmin=vmin, vmax=vmax, aspect="auto"
+            )
+            plt.xlabel("Lon")
+            plt.ylabel("Lat")
+            plt.title(f"Altitude at {date}")
+            plt.colorbar()
+            plt.savefig(f"{name}/heatmap_{date}.png")
+            plt.close()
     time_predictions = np.column_stack(time_predictions)
     results[idx] = time_predictions.std(axis=1) / step_t
     time_std = results.copy().reshape(n, p, order="F")
@@ -106,12 +120,14 @@ def plot(data, model, polygon, step_xy, step_t, name):
     plt.ylabel("Lat")
     plt.title("Pixel wise np.log(STD) per day")
     plt.colorbar()
-    plt.savefig(f"{name}/time_std.png")
+    plt.savefig(f"{name}/time_std_trial_{trial}.png")
     plt.close()
     return time_predictions
 
 
-def setup_hp(yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve):
+def setup_hp(
+    yaml_params, data, name, model, coherence, swath, dem, dem_path, pde_curve
+):
     model_hp = pinns.read_yaml(yaml_params)
     gpu = torch.cuda.is_available()
     # device = "cuda" if gpu else "cpu"
@@ -126,6 +142,7 @@ def setup_hp(yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve
     model_hp.cosine_anealing["step"] = ceil(n // bs) * model_hp.cosine_anealing["epoch"]
     model_hp.gpu = gpu
     model_hp.verbose = True
+    model_hp.model["name"] = model
     model_hp.coherence = coherence
     model_hp.swath = swath
     model_hp.dem = dem
@@ -141,9 +158,11 @@ def setup_hp(yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve
     return model_hp
 
 
-def single_run(yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve):
+def single_run(
+    yaml_params, data, name, model, coherence, swath, dem, dem_path, pde_curve
+):
     model_hp = setup_hp(
-        yaml_params, data, name, coherence, swath, dem, dem_path, pde_curve
+        yaml_params, data, name, model, coherence, swath, dem, dem_path, pde_curve
     )
 
     return_dataset_fn = partial(return_dataset, data=data)
@@ -186,9 +205,12 @@ def evaluation(model, time_predictions, step_t, name):
     rmse_all = rmse(all_targets, all_predictions)
 
     t_var = time_predictions.std(axis=1).mean() / step_t
+    return [t_var, mae_train, mae_test, mae_all, rmse_train, rmse_test, rmse_all]
 
+
+def save_results(variables, ids, name):
     results = pd.DataFrame()
-    variables = [t_var, mae_train, mae_test, mae_all, rmse_train, rmse_test, rmse_all]
+    # variables = [t_var, mae_train, mae_test, mae_all, rmse_train, rmse_test, rmse_all]
     names = [
         "Time std",
         "MAE (Train)",
@@ -198,8 +220,10 @@ def evaluation(model, time_predictions, step_t, name):
         "RMSE (Test)",
         "RMSE (All)",
     ]
-    for v, n in zip(variables, names):
-        results.loc[0, n] = v
+    for i in range(len(ids)):
+        for v, n in zip(variables[i], names):
+            results.loc[i, n] = v
+        results.loc[i, "trial"] = ids[-i][0]
     results.to_csv(f"{name}.csv")
 
 
@@ -269,6 +293,7 @@ def main():
         opt.yaml_file,
         data,
         opt.name,
+        opt.model,
         opt.coherence,
         opt.swath,
         opt.dem,

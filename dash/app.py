@@ -23,7 +23,7 @@ import matplotlib.animation as animation
 
 if platform == "linux" or platform == "linux2":
     data_folder = "/Data/pnaylor/dash_metadata/"
-    port = 8050
+    port = 4400
     # linux
 elif platform == "darwin":
     data_folder = "/Users/peter.naylor/tmp/simpledash/metadata"
@@ -159,6 +159,7 @@ gif_generator = [
         value="example-gif",
     ),
     html.Button("Create GIF", id="submit-gif", n_clicks=0),
+    html.Div(id="saved-gif"),
     html.Hr(),
 ]
 
@@ -295,6 +296,7 @@ def save_poly(n_clicks, selected_data, mask, poly_name):
 
 
 @app.callback(
+    Output("saved-gif", "children"),
     Input("submit-gif", "n_clicks"),
     State("output-gif", "value"),
     State("gif-generator-time", "value"),
@@ -338,6 +340,7 @@ def generate_gif(
         )
         writer = animation.PillowWriter(fps=5, metadata=dict(artist="Me"), bitrate=1800)
         ani.save(f"{outputs}/{filename}.gif", writer=writer)
+    return f"File {filename}.gif saved"
 
 
 if __name__ == "__main__":

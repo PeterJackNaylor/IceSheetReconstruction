@@ -9,6 +9,11 @@ def main():
         ["PDE_C", "MAE (Train)", "MAE (All)", "RMSE (Train)", "RMSE (All)"], axis=1
     )
     table = table.round(2)
+    table = table.groupby(["Model", "Coh", "Swa", "Dem"]).mean()
+    table_mean = table[["Time std", "MAE (Test)", "RMSE (Test)"]]
+    table_std = table[["Time std (std)", "MAE (Test) (std)", "RMSE (Test) (std)"]]
+    table_std.columns = ["Time std", "MAE (Test)", "RMSE (Test)"]
+    table = table_mean.astype(str) + " +/- " + table_std.astype(str)
     table.to_csv(csv_file.replace(".csv", "_cleaned.csv"))
 
 

@@ -9,6 +9,7 @@ from validation_arguments import (
 )
 from validation_icebridge import mat_plot, borne_poly
 import pickle
+import pandas as pd
 
 
 def plot(
@@ -98,27 +99,45 @@ def main():
     with open(opt.validation_mask, "rb") as f:
         validation_area = pickle.load(f)
 
-    NN, hp = load_model(opt.weight, opt.npz)
+    trial_score = pd.read_csv(opt.scores_csv, index_col=0)
+    # NN, hp = load_model(opt.weight, opt.npz)
 
     data = np.load(f"{opt.folder}/{opt.dataname}")
 
     data_mask = np.load(opt.mask)
     names = ["tight", "train", "validation"]
 
-    time = data[:, 0:1].copy()
-    normalize(time, hp.nv_samples)
-    idx = ((-1 < time) & (time < 1))[:, 0]
+    results = []
+    for i in range(1, opt.k + 1):
+        id_ = trial_score["number"].values[-i]
+        weights = opt.multiple_folder + f"/optuna_{id_}.pth"
+        npz = opt.multiple_folder + f"/optuna_{id_}.npz"
+        NN, hp = load_model(weights, npz)
+        time = data[:, 0:1].copy()
+        normalize(time, hp.nv_samples)
+        idx = ((-1 < time) & (time < 1))[:, 0]
 
-    samples = data[idx, :-1]
-    targets = data[idx, -1:]
-    data_mask = data_mask[idx]
+        samples = data[idx, :-1]
+        targets = data[idx, -1:]
+        data_mask = data_mask[idx]
 
-    predictions = predict(NN, hp, samples).numpy()
-    predictions = predictions * hp.nv_targets[0][1] + hp.nv_targets[0][0]
-    results = evaluate(targets, predictions, data[idx, 0].copy(), data_mask, names)
-
-    plot(samples, predictions, targets, tight_mask, train_area, validation_area)
-    results.to_csv(opt.save, index=True)
+        predictions = predict(NN, hp, samples).numpy()
+        predictions = predictions * hp.nv_targets[0][1] + hp.nv_targets[0][0]
+        results_model = evaluate(
+            targets, predictions, data[idx, 0].copy(), data_mask, names
+        )
+        results.append(results_model)
+        if i == 1:
+            plot(samples, predictions, targets, tight_mask, train_area, validation_area)
+        results_model.to_csv(opt.save.replace(".csv", f"_model_{i}.csv"), index=True)
+    keep = [
+        "MAE (validation)",
+        "MSE (validation)",
+        "MED (validation)",
+        "STD (validation)",
+        "N (validation)",
+    ]
+    pd.concat(results).loc["mean", keep].to_csv(opt.save, index=False)
 
 
 if __name__ == "__main__":
