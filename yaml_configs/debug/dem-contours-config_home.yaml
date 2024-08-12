@@ -10,5 +10,5 @@ plot: On
 name: DEM_Contours
 polygon_name_inner: tight_enveloppe.pickle
 # polygon_name_inner_smoothed: envelop_polygon_inner_smoothed.pickle
-polygon_train_mask: /Data/pnaylor/data_ice_sheet/training_mask.pickle
-polygon_valid_mask: /Data/pnaylor/data_ice_sheet_validation/validation_mask.pickle
+polygon_train_mask: /Users/peter.naylor/Downloads/IceSheet/training_mask.pickle
+polygon_valid_mask: /Users/peter.naylor/Downloads/IceSheet/validation_mask.pickle

@@ -1,0 +1,13 @@
+name: debug
+datapath: /Users/peter.naylor/Downloads/IceSheet/data
+datapath_validation: /Users/peter.naylor/Downloads/IceSheet/data_ice_sheet_validation
+data_setup: mini #small # mini, small, medium, all
+model: [SIREN] #, RFF, SIREN, MFN] # WIRES KAN
+coherence: [Off] #[Off] # [On, Off] #[On, Off]
+swath: [On] #[Off] # [On, Off] #[On, Off]
+dem: [Off] #[Off] # [On, Off] #[On, Off]
+pde_curve: [Off]
+inr_config: inr-config.yaml
+pre_processing_config: pre_processing-config.yaml
+dem_contours_config: dem-contours-config_home.yaml
+test_set_cs2: /Users/peter.naylor/Library/CloudStorage/OneDrive-ESA/Documents/projects/IceSheet/IceSheetReconstruction/mini_test_set.txt

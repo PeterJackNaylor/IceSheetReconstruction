@@ -113,6 +113,14 @@ def get_n_best_trials(study):
     return out  # Return the top n trials
 
 
+def read_test_set(data, file, n):
+    test_times = np.loadtxt(file)
+    idx_test = np.where(np.isin(data[:, 0], test_times))[0]
+    features = np.zeros(n, dtype=bool)
+    features[idx_test] = True
+    return features
+
+
 def main():
     opt = parser_f()
 
@@ -129,6 +137,13 @@ def main():
         opt.pde_curve,
     )
     model_hp.device = "cuda" if model_hp.gpu else "cpu"
+
+    if opt.test_file:
+        idx_test = read_test_set(data, opt.test_file, data.shape[0])
+        data_test = data[idx_test]
+        data = data[~idx_test]
+    else:
+        data_test = data.copy()
     return_dataset_fn = partial(return_dataset, data=data)
 
     objective = partial(objective_optuna, model_hp=model_hp, data_fn=return_dataset_fn)
@@ -154,7 +169,7 @@ def main():
         npz = f"multiple/optuna_{id_trial}.npz"
         weights = f"multiple/optuna_{id_trial}.pth"
 
-        NN = load_model(model_hp, weights, npz, data)
+        NN = load_model(model_hp, weights, npz, data_test)
 
         step_t = 4
         step_xy = 0.05
@@ -165,7 +180,13 @@ def main():
         except:
             pass
         time_preds = plot(
-            data, NN, polygon, step_xy, step_t, opt.name + "/icesheet", trial=id_trial
+            data_test,
+            NN,
+            polygon,
+            step_xy,
+            step_t,
+            opt.name + "/icesheet",
+            trial=id_trial,
         )
         scores = evaluation(NN, time_preds, step_t, opt.name)
         metrics.append(scores)

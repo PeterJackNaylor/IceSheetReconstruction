@@ -110,9 +110,6 @@ class IceSheet(pinns.DensityEstimator):
         return tanh(eps * relu(D) * relu(self.grad_lon2))
 
     def autocasting(self):
-        if self.device == "cpu":
-            dtype = torch.bfloat32
-        else:
-            dtype = torch.float32
+        dtype = torch.float32
         self.use_amp = False
         self.dtype = dtype

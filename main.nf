@@ -124,6 +124,7 @@ process INR {
         each dem
         path dem_file
         each pde_curve
+        path test_file
         path polygon
         path yaml_file
 
@@ -146,6 +147,7 @@ process INR {
                 --swath $swath \
                 --dem $dem --dem_data $dem_file \
                 --pde_curv $pde_curve \
+                --test_file $test_file \
                 --polygon $polygon
         """
 }
@@ -263,7 +265,7 @@ workflow {
         ConvertNC2NPY(pyconvert, params.datapath)
         Pre_process(pypreprocess, ConvertNC2NPY.output, params_preprocess)
         INR(pyinr, Pre_process.out, params.model, params.coherence, params.swath,
-            params.dem, DemFile.out[0], params.pde_curve, DemFile.out[1],
+            params.dem, DemFile.out[0], params.pde_curve, params.test_set_cs2, DemFile.out[2],
             params_inr)
         FilterExternalValidation(filter_data_mask, validation_py, params.datapath_validation, DemFile.out[3], DemFile.out[1], DemFile.out[2])
         ExternalValidation(FilterExternalValidation.out, params.datapath_validation, INR.out[2], DemFile.out[3], DemFile.out[1], DemFile.out[2])

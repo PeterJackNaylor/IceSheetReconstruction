@@ -143,7 +143,7 @@ def std_diff(x, y):
 
 def inverse_time(time_array):
     start_time = pd.Timestamp(datetime(2010, 7, 1))
-    time_in_days = time_array * np.timedelta64(1, "D") + start_time
+    time_in_days = time_array * np.timedelta64(24 * 60, "h") + start_time
     return time_in_days
 
 

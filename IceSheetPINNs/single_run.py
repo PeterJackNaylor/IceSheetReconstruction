@@ -55,6 +55,11 @@ def parser_f():
         default=5,
         help="How many models to average to produce the score",
     )
+    parser.add_argument(
+        "--test_file",
+        default=None,
+        help="File with test indexes, only to use with specific datasets",
+    )
     args = parser.parse_args()
     args.coherence = args.coherence == "true"
     args.swath = args.swath == "true"

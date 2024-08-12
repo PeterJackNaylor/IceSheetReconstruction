@@ -8,5 +8,8 @@ jupyter
 chart_studio
 optuna
 alphashape
+matplotlib
+pyproj
 pre-commit
+numba
 # pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cpu

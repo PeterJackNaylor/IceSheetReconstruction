@@ -37,6 +37,7 @@ def set_time(time_array):
 def get_dataset_from_xarray(path, swath_id=0):
     xa = xarray.open_dataset(path)
     df = xa.to_dataframe()
+    # TODO change in the future to the actual swath time id (and not day id)
     df["Swath"] = swath_id
     df = df[["Time", "Lat", "Lon", "Height", "Swath", "Coherence"]]
     df = df[df.index.get_level_values("d2") == 0]
@@ -53,7 +54,7 @@ def PetermannGlacier(path, year_start=2010, year_end=2022, month_start=7, month_
             month_start = 1
         if year == year_end:
             last_month = month_end
-        for month in range(month_start, last_month):
+        for month in range(month_start, last_month + 1):
             files += glob(join(path, f"{year}/{month:02d}/*.nc"))
     id_ = 0
     list_arrays = []

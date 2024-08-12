@@ -6,8 +6,8 @@ import pinns
 def split_train(data, seed, train_fraction, swath=True):
     n = data.shape[0]
     if swath:
-        n_swath = data[:, 4].max() + 1
-        id_swath = list(range(int(n_swath)))
+        id_swath = list(np.unique(data[:, 4]))
+        n_swath = len(id_swath)
         last_id = int(n_swath * train_fraction)
         np.random.seed(seed)
         if train_fraction != 0.0 and train_fraction != 1.0:
@@ -27,64 +27,89 @@ def split_train(data, seed, train_fraction, swath=True):
     return idx_train, idx_test
 
 
-def return_dataset(hp, data, gpu=True):
-    # [t, lat, lon, z, swath_id, coherence]
-    idx_train, idx_test = split_train(
-        data,
-        hp.seed,
-        hp.train_fraction,
-        swath=hp.swath,
-    )
+# def generate_train_val_test_set(hp, data, gpu, file):
+#     idx_test = read_test_set(file)
+#     data_train_val = data[~idx_test]
+#     data_test = data[~idx_test]
+
+#     data_train, data_val = generate_train_val_set(hp, data_train_val, gpu)
+
+#     data_test = generate_single_dataloader(hp, data_test, gpu,
+#                                             nv_samples=data_train.nv_samples, nv_targets=data_train.nv_samples,
+#                                             train=False)
+#     return data_train, data_val, data_test
+
+
+def generate_single_dataloader(
+    hp, data, gpu, nv_samples=None, nv_targets=None, train=True
+):
     axis_with = np.array([0, 1, 2, 5])
     axis_without = np.array([0, 1, 2])
     axis = axis_with if hp.coherence else axis_without
-
-    samples_train = data[idx_train][:, axis]
-    samples_test = data[idx_test][:, axis_without]
+    axis = axis if train else axis_without
+    samples = data[:, axis]
     targets = data[:, 3:4]
-
-    data_train = TLaLoZC(
-        samples_train,
-        targets=targets[idx_train],
-        nv_samples=None,
-        nv_targets=None,
+    data = TLaLoZC(
+        samples,
+        targets=targets,
+        nv_samples=nv_samples,
+        nv_targets=nv_targets,
         gpu=gpu,
-        test=False,
+        test=~train,
         hp=hp,
     )
 
-    data_test = TLaLoZC(
-        samples_test,
-        targets=targets[idx_test],
-        nv_samples=data_train.nv_samples,
-        nv_targets=data_train.nv_targets,
-        gpu=gpu,
-        test=True,
-        hp=hp,
-    )
-
-    if hp.dem:
+    if hp.dem and train:
         dem = np.load(hp.dem_data)
         samples_dem, target_dem = dem[:, 0:2], dem[:, 2:3]
         dem_data = LaLoZ(
             samples_dem,
             target_dem,
-            nv_samples=data_train.nv_samples,
-            nv_targets=data_train.nv_targets,
+            nv_samples=nv_samples,
+            nv_targets=nv_targets,
             gpu=gpu,
             hp=hp,
         )
-        data_train.dem_data = dem_data
-    return data_train, data_test
+        data.dem_data = dem_data
+    return data
+
+
+def return_dataset(hp, data, gpu):
+    idx_train, idx_val = split_train(
+        data,
+        hp.seed,
+        hp.train_fraction,
+        swath=hp.swath,
+    )
+
+    data_train = generate_single_dataloader(
+        hp, data[idx_train], gpu, nv_samples=None, nv_targets=None, train=True
+    )
+    data_val = generate_single_dataloader(
+        hp,
+        data[idx_val],
+        gpu,
+        nv_samples=data_train.nv_samples,
+        nv_targets=data_train.nv_samples,
+        train=False,
+    )
+    return data_train, data_val
+
+
+# def return_dataset(hp, data, gpu=True, test_set=False, file="test_distribution.csv"):
+#     # [t, lat, lon, z, swath_id, coherence]
+#     if test_set:
+#         return generate_train_val_test_set(hp, data, gpu, file)
+#     else:
+#         return generate_train_val_set(hp, data, gpu)
 
 
 class dtypedData(pinns.DataPlaceholder):
     def setup_cuda(self, gpu):
+        dtype = torch.float32
         if gpu:
-            dtype = torch.float32
             device = "cuda"
         else:
-            dtype = torch.bfloat32
             device = "cpu"
 
         self.samples = self.samples.to(device, dtype=dtype)
