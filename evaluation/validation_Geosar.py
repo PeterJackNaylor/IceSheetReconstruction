@@ -103,8 +103,7 @@ def main():
     # NN, hp = load_model(opt.weight, opt.npz)
 
     data = np.load(f"{opt.folder}/{opt.dataname}")
-
-    data_mask = np.load(opt.mask)
+    data_mask_real = np.load(opt.mask)
     names = ["tight", "train", "validation"]
 
     results = []
@@ -119,7 +118,7 @@ def main():
 
         samples = data[idx, :-1]
         targets = data[idx, -1:]
-        data_mask = data_mask[idx]
+        data_mask = data_mask_real.copy()[idx]
 
         predictions = predict(NN, hp, samples).numpy()
         predictions = predictions * hp.nv_targets[0][1] + hp.nv_targets[0][0]

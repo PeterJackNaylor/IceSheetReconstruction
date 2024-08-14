@@ -85,7 +85,6 @@ class IceSheet(pinns.DensityEstimator):
         M = self.M if hasattr(self, "M") else None
 
         batch = next(self.data.dem_data)
-
         t = pinns.gen_uniform(
             bs,
             self.device,

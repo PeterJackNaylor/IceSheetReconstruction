@@ -106,14 +106,9 @@ params_inr = file("yaml_configs/" + params.name + "/" + params.inr_config)
 process INR {
 
     publishDir "${publishdir}/INR/", overwrite: true, pattern: "${name}"
-    // publishDir "outputs/${dataconfig}/INR/${name}", overwrite: true, pattern: "*.pth"
-    // publishDir "outputs/${dataconfig}/INR/${name}", overwrite: true, pattern: "*.npz"
     publishDir "${publishdir}/INR/${name}", overwrite: true, pattern: "*.csv", failOnError: false
     publishDir "${publishdir}/INR/${name}", overwrite: true, pattern: "multiple", failOnError: false
     publishDir "${publishdir}/INR/${name}", overwrite: true, pattern: "optuna", failOnError: false
-
-    // afterScript "bash postprocessing/mv_optuna_files.sh"
-
 
     input:
         path pyinr
@@ -128,9 +123,7 @@ process INR {
         path polygon
         path yaml_file
 
-
     output:
-        // tuple path("${name}.pth"), path("${name}.npz"), val(name)
         path(name)
         path("${name}.csv")
         tuple path("*__trial_scores.csv"), path("multiple")
@@ -156,8 +149,37 @@ validation_py = [
     tuple("evaluation/validation_icebridge.py", "OIB", "oib_within_petermann_ISRIN_time.npy"),
     tuple("evaluation/validation_Geosar.py", "GeoSAR", "GeoSAR_Petermann_xband_prep.npy"),
 ]
+if (["mini", "small", "medium", "all"].contains(params.data_setup)){
+    validation_py = validation_py + [
+        tuple("evaluation/validation_cs2.py", "CS2_mini_test", "mini_test_set_cs2.npy"),
+        tuple("evaluation/validation_cs2.py", "CS2_mini", "mini_cleaned.npy"),
+    ]
+}
+if (["small", "medium", "all"].contains(params.data_setup)){
+    validation_py = validation_py + [
+        tuple("evaluation/validation_cs2.py", "CS2_small_test", "small_test_set_cs2.npy"),
+        tuple("evaluation/validation_cs2.py", "CS2_small", "small_cleaned.npy"),
+    ]
+}
+if (["medium", "all"].contains(params.data_setup)){
+    validation_py = validation_py + [
+        tuple("evaluation/validation_cs2.py", "CS2_medium_test", "medium_test_set_cs2.npy"),
+        tuple("evaluation/validation_cs2.py", "CS2_medium", "medium_cleaned.npy"),
+        tuple("evaluation/validation_icebridge.py", "OIB_small", "mini_small_oib.npy"),
+    ]
+}
+if (params.data_setup == "all"){
+    validation_py = validation_py + [
+        tuple("evaluation/validation_cs2.py", "CS2_all_test", "all_test_set_cs2.npy"),
+        tuple("evaluation/validation_cs2.py", "CS2_all", "all_cleaned.npy"),
+        tuple("evaluation/validation_icebridge.py", "OIB_small", "mini_small_oib.npy"),
+        tuple("evaluation/validation_icebridge.py", "OIB_medium", "medium_oib.npy"),
+    ]
+}
+
 filter_data_mask = file("evaluation/filter_with_mask.py")
 process FilterExternalValidation {
+
     input:
         path py_filter
         each val_tag
@@ -167,12 +189,10 @@ process FilterExternalValidation {
         path validation_mask
 
     output:
-        // tuple path(filepy_validation), val(tag), path("${tag}_mask.npy")
         tuple val(filepy_validation), val(tag), path("${tag}_mask.npy"), val(dataname)
 
     script:
         filepy_validation = val_tag[0]
-        // filepy_validation = file(val_tag[0])
         tag = val_tag[1]
         dataname = val_tag[2]
     """
@@ -212,7 +232,8 @@ process ExternalValidation {
     """
         python $validation_method --folder $validation_folder \
                                   --dataname $dataname \
-                                  --scores_csv $scores --multiple_folder $multiple \
+                                  --scores_csv $scores \
+                                  --multiple_folder $multiple \
                                   --tight_mask $tight_mask \
                                   --train_mask $train_mask \
                                   --validation_mask $validation_mask \
@@ -261,11 +282,12 @@ process RegroupValidation {
 workflow {
 
     main:
+        test_set = file(params.datapath + "/" + params.test_set_cs2)
         DemFile(pydemcontours, params_demcontours)
         ConvertNC2NPY(pyconvert, params.datapath)
         Pre_process(pypreprocess, ConvertNC2NPY.output, params_preprocess)
         INR(pyinr, Pre_process.out, params.model, params.coherence, params.swath,
-            params.dem, DemFile.out[0], params.pde_curve, params.test_set_cs2, DemFile.out[2],
+            params.dem, DemFile.out[0], params.pde_curve, test_set, DemFile.out[2],
             params_inr)
         FilterExternalValidation(filter_data_mask, validation_py, params.datapath_validation, DemFile.out[3], DemFile.out[1], DemFile.out[2])
         ExternalValidation(FilterExternalValidation.out, params.datapath_validation, INR.out[2], DemFile.out[3], DemFile.out[1], DemFile.out[2])

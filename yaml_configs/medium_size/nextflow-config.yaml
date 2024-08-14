@@ -10,3 +10,4 @@ pde_curve: [Off]
 inr_config: inr-config.yaml
 pre_processing_config: pre_processing-config.yaml
 dem_contours_config: dem-contours-config.yaml
+test_set_cs2: medium_test_set_cs2.txt

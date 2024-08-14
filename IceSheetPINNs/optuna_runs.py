@@ -75,12 +75,6 @@ def load_model(model_hp, weights, npz_path, data):
     model_hp.model["hidden_nlayers"] = npz["model"].item()["hidden_nlayers"]
     if model_hp.model["name"] == "KAN":
         model_hp.model["hidden_width"] = npz["model"].item()["hidden_width"]
-    # model_hp.swath = npz["swath"].item()
-    # model_hp.coherence = npz["coherence"].item()
-    # model_hp.dem = npz["dem"].item()
-    # if model_hp.model["name"] == "RFF":
-    #     B = npz["B"]
-    #     model_hp.B = torch.from_numpy(B).to(model_hp.device)
     model = INR(
         model_hp.model["name"],
         model_hp.input_size,
@@ -145,7 +139,6 @@ def main():
     else:
         data_test = data.copy()
     return_dataset_fn = partial(return_dataset, data=data)
-
     objective = partial(objective_optuna, model_hp=model_hp, data_fn=return_dataset_fn)
 
     study = optuna.create_study(

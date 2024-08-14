@@ -6,16 +6,16 @@ import pinns
 def split_train(data, seed, train_fraction, swath=True):
     n = data.shape[0]
     if swath:
-        id_swath = list(np.unique(data[:, 4]))
+        id_swath = list(np.unique(data[:, 0]))
         n_swath = len(id_swath)
         last_id = int(n_swath * train_fraction)
         np.random.seed(seed)
         if train_fraction != 0.0 and train_fraction != 1.0:
             np.random.shuffle(id_swath)
         idx_train = id_swath[:last_id]
-        idx_train = np.where(np.isin(data[:, 4], idx_train))[0]
+        idx_train = np.where(np.isin(data[:, 0], idx_train))[0]
         idx_test = id_swath[last_id:]
-        idx_test = np.where(np.isin(data[:, 4], idx_test))[0]
+        idx_test = np.where(np.isin(data[:, 0], idx_test))[0]
     else:
         idx = np.arange(n)
         np.random.seed(seed)
@@ -55,18 +55,17 @@ def generate_single_dataloader(
         nv_samples=nv_samples,
         nv_targets=nv_targets,
         gpu=gpu,
-        test=~train,
+        test=not train,
         hp=hp,
     )
-
     if hp.dem and train:
         dem = np.load(hp.dem_data)
         samples_dem, target_dem = dem[:, 0:2], dem[:, 2:3]
         dem_data = LaLoZ(
             samples_dem,
             target_dem,
-            nv_samples=nv_samples,
-            nv_targets=nv_targets,
+            nv_samples=data.nv_samples[1:],
+            nv_targets=data.nv_targets,
             gpu=gpu,
             hp=hp,
         )
@@ -81,7 +80,6 @@ def return_dataset(hp, data, gpu):
         hp.train_fraction,
         swath=hp.swath,
     )
-
     data_train = generate_single_dataloader(
         hp, data[idx_train], gpu, nv_samples=None, nv_targets=None, train=True
     )
@@ -197,7 +195,6 @@ class LaLoZ(dtypedData):
         samples = samples.astype(np.float32)
         if self.need_target:
             targets = targets.astype(np.float32)
-
         nv_samples = self.normalize(samples, nv_samples, True)
         if self.need_target:
             if not normalise_targets:

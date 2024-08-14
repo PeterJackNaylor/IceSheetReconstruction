@@ -1,5 +1,5 @@
 dem_path: /Data/pnaylor/data_ice_sheet/Util_GrIS_1km.nc
-one_month_data: /Data/pnaylor/data_ice_sheet/2015/01/ # small_month
+one_month_data: /Data/pnaylor/data_ice_sheet/2015/01 # small_month
 distance: 0.15
 alpha: 5.5
 xfact: 1

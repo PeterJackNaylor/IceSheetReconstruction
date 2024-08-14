@@ -185,10 +185,13 @@ def evaluate(targets, preds, time, data_mask, names):
             y_true = targets[index & data_mask[:, i]]
             y_pred = preds[index & data_mask[:, i]]
             try:
-                MSE = mse(y_true, y_pred)
-                MAE = mae(y_true, y_pred)
-                MED = median_diff(y_true, y_pred)
-                STD = std_diff(y_true, y_pred)
+                if len(y_pred) == 0:
+                    MSE = MAE = MED = STD = np.nan
+                else:
+                    MSE = mse(y_true, y_pred)
+                    MAE = mae(y_true, y_pred)
+                    MED = median_diff(y_true, y_pred)
+                    STD = std_diff(y_true, y_pred)
             except:
                 MSE = MAE = "Failed"
             results.loc[date_time, f"MSE ({name})"] = MSE

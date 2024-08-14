@@ -10,4 +10,4 @@ pde_curve: [Off]
 inr_config: inr-config.yaml
 pre_processing_config: pre_processing-config.yaml
 dem_contours_config: dem-contours-config_home.yaml
-test_set_cs2: /Users/peter.naylor/Library/CloudStorage/OneDrive-ESA/Documents/projects/IceSheet/IceSheetReconstruction/mini_test_set.txt
+test_set_cs2: /Users/peter.naylor/Library/CloudStorage/OneDrive-ESA/Documents/projects/IceSheet/IceSheetReconstruction/mini_test_set_cs2.txt
