@@ -72,8 +72,12 @@ def main():
     all_axes = [pd.Timestamp(datetime(2010, 6, 15)), pd.Timestamp(datetime(2023, 1, 1))]
 
     mini_cs2 = load_data(cs2_path.format("mini"))
-    mini_cs2.loc[mini_cs2.index.max() + 1, "Time"] = mini_axes[0]
-    mini_cs2.loc[mini_cs2.index.max() + 1, "n"] = 0
+    new_idx = mini_cs2.index.max() + 1
+    new_idx2 = mini_cs2.index.max() + 2
+    mini_cs2.loc[new_idx, "Time"] = mini_axes[0]
+    mini_cs2.loc[new_idx, "n"] = 0
+    mini_cs2.loc[new_idx2, "Time"] = mini_axes[1]
+    mini_cs2.loc[new_idx2, "n"] = 0
     mini_cs2["data"] = "Mini"
     mini_cs2 = (
         mini_cs2.set_index("Time")
@@ -84,8 +88,12 @@ def main():
     mini_cs2[mini_cs2 == 0] = np.NaN
     mini_cs2 = replace_nan_near_values(mini_cs2)
     small_cs2 = load_data(cs2_path.format("small"))
-    small_cs2.loc[small_cs2.index.max() + 1, "Time"] = small_axes[0]
-    small_cs2.loc[small_cs2.index.max() + 1, "n"] = 0
+    new_idx = small_cs2.index.max() + 1
+    new_idx2 = small_cs2.index.max() + 2
+    small_cs2.loc[new_idx, "Time"] = small_axes[0]
+    small_cs2.loc[new_idx, "n"] = 0
+    small_cs2.loc[new_idx2, "Time"] = small_axes[1]
+    small_cs2.loc[new_idx2, "n"] = 0
     small_cs2["data"] = "small"
     small_cs2 = (
         small_cs2.set_index("Time").resample(small_time)["n"].sum().reset_index()
@@ -94,8 +102,12 @@ def main():
     small_cs2 = replace_nan_near_values(small_cs2)
 
     medium_cs2 = load_data(cs2_path.format("medium"))
-    medium_cs2.loc[medium_cs2.index.max() + 1, "Time"] = medium_axes[0]
-    medium_cs2.loc[medium_cs2.index.max() + 1, "n"] = 0
+    new_idx = medium_cs2.index.max() + 1
+    new_idx2 = medium_cs2.index.max() + 2
+    medium_cs2.loc[new_idx, "Time"] = medium_axes[0]
+    medium_cs2.loc[new_idx, "n"] = 0
+    medium_cs2.loc[new_idx2, "Time"] = medium_axes[1]
+    medium_cs2.loc[new_idx2, "n"] = 0
     medium_cs2["data"] = "medium"
     medium_cs2 = (
         medium_cs2.set_index("Time").resample(medium_time)["n"].sum().reset_index()
@@ -104,8 +116,12 @@ def main():
     medium_cs2 = replace_nan_near_values(medium_cs2)
 
     all_cs2 = load_data(cs2_path.format("all"))
-    all_cs2.loc[all_cs2.index.max() + 1, "Time"] = all_axes[0]
-    all_cs2.loc[all_cs2.index.max() + 1, "n"] = 0
+    new_idx = all_cs2.index.max() + 1
+    new_idx2 = all_cs2.index.max() + 2
+    all_cs2.loc[new_idx, "Time"] = all_axes[0]
+    all_cs2.loc[new_idx, "n"] = 0
+    all_cs2.loc[new_idx2, "Time"] = all_axes[1]
+    all_cs2.loc[new_idx2, "n"] = 0
     all_cs2["data"] = "all"
     all_cs2 = all_cs2.set_index("Time").resample(all_time)["n"].sum().reset_index()
     all_cs2[all_cs2 == 0] = np.NaN
@@ -161,13 +177,11 @@ def main():
     )
     fig.append_trace(
         go.Scatter(name="GeoSAR", x=mini_geo["Time"], y=mini_geo["n"], mode="lines"),
-        # go.Bar(name='GeoSAR', x=geosar["Time"], y=geosar["n"]),
         row=1,
         col=1,
     )
     fig.append_trace(
         go.Scatter(name="OIB", x=mini_oib["Time"], y=mini_oib["n"], mode="lines"),
-        # go.Bar(name='OIB', x=mini_oib["Time"], y=mini_oib["n"]),
         row=1,
         col=1,
     )
@@ -196,8 +210,6 @@ def main():
         row=1,
         col=1,
     )
-    # fig.add_vline(x=mini_axes[0] + a_day, line_width=2, line_dash='dashdot', line_color='#AB63FA', row=1, col=1)
-    # fig.add_vline(x=mini_axes[1] - a_day, line_width=2, line_dash='dashdot', line_color='#AB63FA', row=1, col=1)
     fig["layout"]["xaxis1"].update(
         range=mini_axes, dtick="M1", tickformat="%b", ticklabelmode="period"
     )
@@ -212,7 +224,6 @@ def main():
             x=small_geo["Time"],
             y=small_geo["n"],
             mode="lines",
-            # go.Bar(name='small-oib', x=oib_small["Time"], y=oib_small["n"],
             showlegend=False,
             marker={"color": "#EF553B"},
         ),
@@ -225,7 +236,6 @@ def main():
             x=small_oib["Time"],
             y=small_oib["n"],
             mode="lines",
-            # go.Bar(name='small-oib', x=oib_small["Time"], y=oib_small["n"],
             showlegend=False,
             marker={"color": "#00CC96"},
         ),
@@ -238,7 +248,6 @@ def main():
             x=small_cs2["Time"],
             y=small_cs2["n"],
             mode="lines",
-            # go.Bar(name="small-cs2", x=small_cs2["Time"], y=small_cs2["n"],
             showlegend=False,
             marker={"color": "#636EFA"},
         ),
@@ -309,7 +318,6 @@ def main():
             x=medium_geo["Time"],
             y=medium_geo["n"],
             mode="lines",
-            # go.Bar(name='small-oib', x=oib_small["Time"], y=oib_small["n"],
             showlegend=False,
             marker={"color": "#EF553B"},
         ),
@@ -322,7 +330,6 @@ def main():
             x=medium_oib["Time"],
             y=medium_oib["n"],
             mode="lines",
-            # go.Bar(name='med-oib', x=oib_medium["Time"], y=oib_medium["n"],
             showlegend=False,
             marker={"color": "#00CC96"},
         ),
@@ -335,7 +342,6 @@ def main():
             x=medium_cs2["Time"],
             y=medium_cs2["n"],
             mode="lines",
-            # go.Bar(name='med-cs2', x=medium_cs2["Time"], y=medium_cs2["n"],
             showlegend=False,
             marker={"color": "#636EFA"},
         ),
@@ -430,7 +436,6 @@ def main():
             x=all_geo["Time"],
             y=all_geo["n"],
             mode="lines",
-            # go.Bar(name='small-oib', x=oib_small["Time"], y=oib_small["n"],
             showlegend=False,
             marker={"color": "#EF553B"},
         ),
@@ -443,7 +448,6 @@ def main():
             x=all_oib["Time"],
             y=all_oib["n"],
             mode="lines",
-            # go.Bar(name='med-oib', x=oib_medium["Time"], y=oib_medium["n"],
             showlegend=False,
             marker={"color": "#00CC96"},
         ),
@@ -456,7 +460,6 @@ def main():
             x=all_cs2["Time"],
             y=all_cs2["n"],
             mode="lines",
-            # go.Bar(name='med-cs2', x=medium_cs2["Time"], y=medium_cs2["n"],
             showlegend=False,
             marker={"color": "#636EFA"},
         ),
