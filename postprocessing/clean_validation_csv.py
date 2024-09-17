@@ -34,7 +34,7 @@ def main():
     table_std = pivot(table_std)
     merged = table_mean.astype(str) + " +/- " + table_std.astype(str)
     merged = merged[["MAE", "MSE", "MED", "STD"]]
-    merged.to_csv(csv_file.replace(".csv", "_cleaned.csv"), float_format="%.2f")
+    merged.to_csv(csv_file.replace(".csv", "_publish.csv"), float_format="%.2f")
 
 
 if __name__ == "__main__":

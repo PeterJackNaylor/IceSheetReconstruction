@@ -32,7 +32,15 @@ def main():
         "RMSE (Test)",
         "RMSE (Test) (std)",
     ]
-    final[keep].to_csv(f"{sys.argv[1]}_cleaned.csv")
+    final[keep].to_csv(f"{sys.argv[1]}_reduced.csv")
+
+    nicer_df = final[keep].round(2)
+    nicer_df = nicer_df.groupby(["Model", "Coh", "Swa", "Dem"]).mean()
+    nicer_df_mean = nicer_df[["Time std", "MAE (Test)", "RMSE (Test)"]]
+    nicer_df_std = nicer_df[["Time std (std)", "MAE (Test) (std)", "RMSE (Test) (std)"]]
+    nicer_df_std.columns = ["Time std", "MAE (Test)", "RMSE (Test)"]
+    nicer_df = nicer_df_mean.astype(str) + " +/- " + nicer_df_std.astype(str)
+    nicer_df.to_csv(f"{sys.argv[1]}_publish.csv")
 
 
 if __name__ == "__main__":

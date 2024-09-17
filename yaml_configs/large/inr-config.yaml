@@ -80,7 +80,7 @@ losses:
     log: True
     lambda: 150
     temporal_causality: False
-    bs: 8192 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
+    bs: 4096 # 8192 #16384 # 65536 #32768 # 8192 # √ # powers of 2 only
     method: gradient_time
     loss_balancing: False
     penalty: L1

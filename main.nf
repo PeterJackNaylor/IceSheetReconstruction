@@ -251,16 +251,18 @@ process RegroupTraining {
         path csvs
 
     output:
-        path "${params.data_setup}.csv"
-        path "${params.data_setup}_cleaned.csv"
+        path "${params.name}.csv"
+        path "${params.name}_reduced.csv"
+        path "${params.name}_publish.csv"
 
     script:
         """
-        python $pyregroup ${params.data_setup}
+        python $pyregroup ${params.name}
         """
 }
 
 pyregroup_val = file("postprocessing/regroup_csv_validation.py")
+py_clean_val = file("postprocessing/clean_validation_csv.py")
 
 process RegroupValidation {
     publishDir publishdir, overwrite: true
@@ -269,11 +271,32 @@ process RegroupValidation {
         tuple val(tag), path(csvs)
 
     output:
-        path "${params.data_setup}_${tag}.csv"
+        path "${tag}.csv"
+        path "${tag}_publish.csv"
+
 
     script:
         """
-        python $pyregroup_val ${params.data_setup}_${tag}
+        python $pyregroup_val ${tag}
+        python $py_clean_val ${tag}.csv
+        """
+}
+
+pypublish = file("postprocessing/publish_final_table.py")
+
+process PublishCSV {
+    publishDir publishdir, overwrite: true
+    input:
+        path pyregroup
+        path train_csv
+        path val__csvs
+    output:
+        path "published.csv"
+
+
+    script:
+        """
+        python $pypublish
         """
 }
 
@@ -293,4 +316,5 @@ workflow {
         ExternalValidation(FilterExternalValidation.out, params.datapath_validation, INR.out[2], DemFile.out[3], DemFile.out[1], DemFile.out[2])
         RegroupTraining(pyregroup, INR.out[1].collect())
         RegroupValidation(pyregroup_val, ExternalValidation.out[0].groupTuple(by: 0))
+        PublishCSV(pypublish, RegroupTraining.out[2], RegroupValidation.out[1].collect())
 }

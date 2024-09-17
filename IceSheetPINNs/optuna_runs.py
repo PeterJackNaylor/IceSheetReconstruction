@@ -1,17 +1,18 @@
 import os
-from single_run import parser_f, setup_hp, plot, evaluation, save_results
-from IceSheetPINNs.dataloader import return_dataset
-from IceSheetPINNs.model_pde import IceSheet
-import optuna
-import pinns
-from pinns.models import INR
+import gc
 import numpy as np
 import torch
-from functools import partial
-import pickle
-
-# import shutil
 from pandas import DataFrame
+import pickle
+from functools import partial
+import optuna
+
+import pinns
+from pinns.models import INR
+from IceSheetPINNs.dataloader import return_dataset
+from IceSheetPINNs.model_pde import IceSheet
+
+from single_run import parser_f, setup_hp, plot, evaluation, save_results
 
 
 def sample_hp(hp, trial):
@@ -20,7 +21,7 @@ def sample_hp(hp, trial):
         hp.losses[k]["lambda"] = trial.suggest_float(
             f"l_{k}",
             1e-4,
-            1e2,
+            1e0,
             log=True,
         )
     if hp.model["name"] == "KAN":
@@ -34,9 +35,8 @@ def sample_hp(hp, trial):
         hp.model["skip"] = False
         hidden_layers = [4, 7]
     else:
-        hp.model["scale"] = trial.suggest_float("scale", 1e-3, 10, log=True)
+        hp.model["scale"] = trial.suggest_float("scale", 1e-3, 1e-1, log=True)
         hidden_layers = [4, 7]
-
     hp.model["hidden_nlayer"] = trial.suggest_int(
         "layers", hidden_layers[0], hidden_layers[1]
     )
@@ -44,6 +44,12 @@ def sample_hp(hp, trial):
     hp.lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
 
     return hp
+
+
+def free_gpu(pinns_object):
+    pinns_object.model.cpu()
+    gc.collect()
+    torch.cuda.empty_cache()
 
 
 def objective_optuna(trial, model_hp, data_fn):
@@ -62,6 +68,8 @@ def objective_optuna(trial, model_hp, data_fn):
         scores = min(NN.test_scores)
     except:
         scores = np.finfo(float).max
+
+    free_gpu(NN)
     return scores
 
 
@@ -138,8 +146,12 @@ def main():
         data = data[~idx_test]
     else:
         data_test = data.copy()
-    return_dataset_fn = partial(return_dataset, data=data)
-    objective = partial(objective_optuna, model_hp=model_hp, data_fn=return_dataset_fn)
+    train_dataloader, val_dataloader = return_dataset(model_hp, data, model_hp.gpu)
+
+    def dataset_fn(hp, gpu):
+        return train_dataloader, val_dataloader
+
+    objective = partial(objective_optuna, model_hp=model_hp, data_fn=dataset_fn)
 
     study = optuna.create_study(
         study_name=opt.name,
@@ -162,7 +174,7 @@ def main():
         npz = f"multiple/optuna_{id_trial}.npz"
         weights = f"multiple/optuna_{id_trial}.pth"
 
-        NN = load_model(model_hp, weights, npz, data_test)
+        NN = load_model(model_hp, weights, npz, data)
 
         step_t = 4
         step_xy = 0.05
@@ -181,7 +193,7 @@ def main():
             opt.name + "/icesheet",
             trial=id_trial,
         )
-        scores = evaluation(NN, time_preds, step_t, opt.name)
+        scores = evaluation(NN, time_preds, step_t)
         metrics.append(scores)
     save_results(metrics, scores_id[-opt.k :], opt.name)
     try:

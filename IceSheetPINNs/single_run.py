@@ -190,7 +190,7 @@ def rmse(target, prediction):
     return loss
 
 
-def evaluation(model, time_predictions, step_t, name):
+def evaluation(model, time_predictions, step_t):
     z_nrm = model.data.nv_targets[0]
     test_targets = model.test_set.targets * z_nrm[1] + z_nrm[0]
     test_predictions = predict(model.test_set.samples, model)

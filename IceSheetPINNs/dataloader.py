@@ -88,7 +88,7 @@ def return_dataset(hp, data, gpu):
         data[idx_val],
         gpu,
         nv_samples=data_train.nv_samples,
-        nv_targets=data_train.nv_samples,
+        nv_targets=data_train.nv_targets,
         train=False,
     )
     return data_train, data_val

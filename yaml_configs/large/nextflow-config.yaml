@@ -3,7 +3,7 @@ datapath: /Data/pnaylor/data_ice_sheet
 datapath_validation: /Data/pnaylor/data_ice_sheet_validation
 data_setup: all #small # mini, small, medium, all
 model: [SIREN] #, RFF, SIREN, MFN] # WIRES KAN
-coherence: [Off] #[Off] # [On, Off] #[On, Off]
+coherence: [On] #[Off] # [On, Off] #[On, Off]
 swath: [On] #[Off] # [On, Off] #[On, Off]
 dem: [Off] #[Off] # [On, Off] #[On, Off]
 pde_curve: [Off]

@@ -5,9 +5,9 @@ import sys
 def main():
     csv_file = sys.argv[1]
     table = pd.read_csv(csv_file)
-    table = table.drop(
-        ["PDE_C", "MAE (Train)", "MAE (All)", "RMSE (Train)", "RMSE (All)"], axis=1
-    )
+    # table = table.drop(
+    #     ["PDE_C", "MAE (Train)", "MAE (All)", "RMSE (Train)", "RMSE (All)"], axis=1
+    # )
     table = table.round(2)
     table = table.groupby(["Model", "Coh", "Swa", "Dem"]).mean()
     table_mean = table[["Time std", "MAE (Test)", "RMSE (Test)"]]
