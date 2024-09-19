@@ -1,0 +1,13 @@
+name: coh_dem_swa_ablation
+datapath: /Data/pnaylor/data_ice_sheet
+datapath_validation: /Data/pnaylor/data_ice_sheet_validation
+data_setup: small #small # mini, small, medium, all
+model: [SIREN, RFF] #, RFF, SIREN, MFN] # WIRES KAN
+coherence: [On, Off] #[Off] # [On, Off] #[On, Off]
+swath: [On, Off] #[Off] # [On, Off] #[On, Off]
+dem: [On, Off] #[Off] # [On, Off] #[On, Off]
+pde_curve: [Off]
+inr_config: inr-config.yaml
+pre_processing_config: pre_processing-config.yaml
+dem_contours_config: dem-contours-config.yaml
+test_set_cs2: small_test_set_cs2.txt

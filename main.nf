@@ -172,7 +172,6 @@ if (params.data_setup == "all"){
     validation_py = validation_py + [
         tuple("evaluation/validation_cs2.py", "CS2_all_test", "all_test_set_cs2.npy"),
         tuple("evaluation/validation_cs2.py", "CS2_all", "all_cleaned.npy"),
-        tuple("evaluation/validation_icebridge.py", "OIB_small", "mini_small_oib.npy"),
         tuple("evaluation/validation_icebridge.py", "OIB_medium", "medium_oib.npy"),
     ]
 }
