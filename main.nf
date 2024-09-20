@@ -290,12 +290,12 @@ process PublishCSV {
         path train_csv
         path val__csvs
     output:
-        path "published.csv"
+        path "${params.name}_beautiful.csv"
 
 
     script:
         """
-        python $pypublish
+        python $pypublish ${params.name}
         """
 }
 
