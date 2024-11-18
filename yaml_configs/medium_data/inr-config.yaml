@@ -140,5 +140,5 @@ cosine_anealing:
 
 
 optuna:
-  patience: 5000
-  trials: 100
+  patience: 10000
+  trials: 200

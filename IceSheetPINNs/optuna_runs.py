@@ -24,6 +24,12 @@ def sample_hp(hp, trial):
             1e0,
             log=True,
         )
+    hp.losses["gradient_time_L1"]["lambda"] = trial.suggest_float(
+        "l_gradient_time_L1",
+        1e-4,
+        1e4,
+        log=True,
+    )
     if hp.model["name"] == "KAN":
         hidden_layers = [1, 3]
         hp.model["hidden_width"] = trial.suggest_int("hidden_width", 8, 32)
@@ -35,8 +41,8 @@ def sample_hp(hp, trial):
         hp.model["skip"] = False
         hidden_layers = [4, 7]
     else:
-        hp.model["scale"] = trial.suggest_float("scale", 1e-3, 1e-1, log=True)
-        hidden_layers = [4, 7]
+        hp.model["scale"] = trial.suggest_float("scale", 1e-3, 1e0, log=True)
+        hidden_layers = [4, 12]
     hp.model["hidden_nlayer"] = trial.suggest_int(
         "layers", hidden_layers[0], hidden_layers[1]
     )
