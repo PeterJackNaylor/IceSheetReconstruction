@@ -148,6 +148,9 @@ def inverse_time(time_array):
 
 
 def evaluate(targets, preds, time, data_mask, names):
+    # this function needs to be accelerated
+    # the for loop and feature handeling
+    # takes way to long.
     data_mask_n = np.ones(
         shape=(data_mask.shape[0], data_mask.shape[1] + 1), dtype=data_mask.dtype
     )

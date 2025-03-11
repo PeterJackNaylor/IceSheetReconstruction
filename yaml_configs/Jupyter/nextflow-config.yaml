@@ -1,0 +1,13 @@
+name: large
+datapath: /lustre/projects/hpc-prj-0102/pnaylor/ISRIN/data_ice_sheet
+datapath_validation: /lustre/projects/hpc-prj-0102/pnaylor/ISRIN/data_ice_sheet_validation
+data_setup: all #small # mini, small, medium, all
+model: [SIREN, RFF] #, RFF, SIREN, MFN] # WIRES KAN
+coherence: [On] #[Off] # [On, Off] #[On, Off]
+swath: [On, Off] #[Off] # [On, Off] #[On, Off]
+dem: [On] #[Off] # [On, Off] #[On, Off]
+pde_curve: [Off]
+inr_config: inr-config.yaml
+pre_processing_config: pre_processing-config.yaml
+dem_contours_config: dem-contours-config.yaml
+test_set_cs2: all_test_set_cs2.txt

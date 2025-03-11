@@ -1,0 +1,14 @@
+dem_path: /lustre/projects/hpc-prj-0102/pnaylor/ISRIN/data_ice_sheet/Util_GrIS_1km.nc
+one_month_data: /lustre/projects/hpc-prj-0102/pnaylor/ISRIN/data_ice_sheet/2015/01/ # small_month
+distance: 0.15
+alpha: 5.5
+xfact: 1
+yfact: 1.1
+smoothing: 0.5
+factor: 10 # sub sampling factor
+plot: On
+name: DEM_Contours
+polygon_name_inner: tight_enveloppe.pickle
+# polygon_name_inner_smoothed: envelop_polygon_inner_smoothed.pickle
+polygon_train_mask: /lustre/projects/hpc-prj-0102/pnaylor/ISRIN/data_ice_sheet/training_mask.pickle
+polygon_valid_mask: /lustre/projects/hpc-prj-0102/pnaylor/ISRIN//data_ice_sheet_validation/validation_mask.pickle
