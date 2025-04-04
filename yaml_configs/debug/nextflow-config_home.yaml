@@ -1,6 +1,8 @@
 name: debug
 datapath: /Users/peter.naylor/Downloads/IceSheet/data
 datapath_validation: /Users/peter.naylor/Downloads/IceSheet/data_ice_sheet_validation
+polygons_folder: /Data/pnaylor/data_ice_sheet/polygons
+projection: NorthStereo #or Mercartor
 data_setup: mini #small # mini, small, medium, all
 model: [SIREN] #, RFF, SIREN, MFN] # WIRES KAN
 coherence: [Off] #[Off] # [On, Off] #[On, Off]

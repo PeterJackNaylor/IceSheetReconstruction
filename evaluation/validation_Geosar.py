@@ -1,4 +1,5 @@
 import numpy as np
+from IceSheetPINNs.utils import load_data, load_geojson
 from validation_arguments import (
     parser_f,
     load_model,
@@ -8,7 +9,7 @@ from validation_arguments import (
     inverse_time,
 )
 from validation_icebridge import mat_plot, borne_poly
-import pickle
+from glob import glob
 import pandas as pd
 
 
@@ -16,9 +17,7 @@ def plot(
     samples,
     predictions,
     targets,
-    tight_mask,
-    train_polygon,
-    validation_polygon,
+    polygons,
     subsample=1e3,
 ):
     n = samples.shape[0]
@@ -34,7 +33,7 @@ def plot(
     error = np.log(np.abs(predictions - targets) + 1) / np.log(10 + 1)
     err_vlim = [-max(error), max(error)]
     error = np.sign(predictions - targets) * error
-    min_x_p, min_y_p, max_x_p, max_y_p = borne_poly(train_polygon)
+    min_x_p, min_y_p, max_x_p, max_y_p = borne_poly(polygons)
     xlim = [min(samples[:, 2].min(), min_x_p), max(samples[:, 2].max(), max_x_p)]
     ylim = [min(samples[:, 1].min(), min_y_p), max(samples[:, 1].max(), max_y_p)]
     y_vlim = [min(min(predictions), min(targets)), max(max(predictions), max(targets))]
@@ -52,9 +51,7 @@ def plot(
             lat,
             y_pred,
             f"GeoSAR_{date_time}_prediction.png",
-            tight_mask,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             y_vlim,
@@ -65,9 +62,7 @@ def plot(
             lat,
             y_true,
             f"GeoSAR_{date_time}_gt.png",
-            tight_mask,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             y_vlim,
@@ -78,9 +73,7 @@ def plot(
             lat,
             err,
             f"GeoSAR_{date_time}_error.png",
-            tight_mask,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             err_vlim,
@@ -92,19 +85,17 @@ def plot(
 def main():
     opt = parser_f()
 
-    with open(opt.tight_mask, "rb") as f:
-        tight_mask = pickle.load(f)
-    with open(opt.train_mask, "rb") as f:
-        train_area = pickle.load(f)
-    with open(opt.validation_mask, "rb") as f:
-        validation_area = pickle.load(f)
+    polygons = glob(opt.polygons_folder + "/*.geojson")
+    masks = []
+    for mask in polygons:
+        masks.append(load_geojson(mask))
 
     trial_score = pd.read_csv(opt.scores_csv, index_col=0)
     # NN, hp = load_model(opt.weight, opt.npz)
 
-    data = np.load(f"{opt.folder}/{opt.dataname}")
+    data = load_data(f"{opt.folder}/{opt.dataname}", opt.projection)
     data_mask_real = np.load(opt.mask)
-    names = ["tight", "train", "validation"]
+    names = [f.split(".")[0].split("/")[1] for f in polygons]
 
     results = []
     for i in range(1, opt.k + 1):
@@ -127,7 +118,7 @@ def main():
         )
         results.append(results_model)
         if i == 1:
-            plot(samples, predictions, targets, tight_mask, train_area, validation_area)
+            plot(samples, predictions, targets, masks)
         results_model.to_csv(opt.save.replace(".csv", f"_model_{i}.csv"), index=True)
     keep = [
         "MAE (validation)",

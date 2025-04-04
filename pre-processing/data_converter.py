@@ -84,6 +84,9 @@ def main():
     elif data_setup == "all":
         year_start, year_end = 2010, 2022
         month_start, month_end = 7, 12
+    elif data_setup == "mini_velocity":
+        year_start, year_end = 2020, 2020
+        month_start, month_end = 1, 12
 
     PetermannGlacier(data_path, year_start, year_end, month_start, month_end)
 

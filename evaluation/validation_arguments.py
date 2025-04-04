@@ -20,6 +20,9 @@ def parser_f():
         "--dataname",
         type=str,
     )
+    parser.add_argument(
+        "--projection", default="Mercartor", type=str, help="projection to use"
+    )
     # parser.add_argument(
     #     "--weight",
     #     type=str,
@@ -37,15 +40,7 @@ def parser_f():
         type=str,
     )
     parser.add_argument(
-        "--tight_mask",
-        type=str,
-    )
-    parser.add_argument(
-        "--train_mask",
-        type=str,
-    )
-    parser.add_argument(
-        "--validation_mask",
+        "--polygons_folder",
         type=str,
     )
     parser.add_argument(

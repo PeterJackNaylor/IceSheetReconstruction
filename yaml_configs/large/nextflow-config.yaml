@@ -1,6 +1,8 @@
 name: large
 datapath: /Data/pnaylor/data_ice_sheet
 datapath_validation: /Data/pnaylor/data_ice_sheet_validation
+polygons_folder: /Data/pnaylor/data_ice_sheet/polygons
+projection: NorthStereo #or Mercartor
 data_setup: all #small # mini, small, medium, all
 model: [SIREN] #, RFF, SIREN, MFN] # WIRES KAN
 coherence: [On] #[Off] # [On, Off] #[On, Off]

@@ -8,27 +8,32 @@ from validation_arguments import (
     normalize,
     inverse_time,
 )
-import pickle
+from glob import glob
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon
+from IceSheetPINNs.utils import load_data, load_geojson
 
 
-def borne_poly(poly):
-
-    if isinstance(poly, Polygon):
-        # If it is a Polygon, extract its exterior boundary
-        y, x = poly.exterior.coords.xy
-        return min(x), min(y), max(x), max(y)
-    else:
-        min_x, min_y, max_x, max_y = np.inf, np.inf, -np.inf, -np.inf
-        # If it is a MultiPolygon, iterate over its constituent polygons
-        for polygon in poly.geoms:
-            y, x = polygon.exterior.coords.xy
+def borne_poly(polys):
+    min_x, min_y, max_x, max_y = np.inf, np.inf, -np.inf, -np.inf
+    for poly in polys:
+        if isinstance(poly, Polygon):
+            # If it is a Polygon, extract its exterior boundary
+            y, x = poly.exterior.coords.xy
             min_x = min(min_x, min(x))
             min_y = min(min_y, min(y))
             max_x = max(max_x, max(x))
             max_y = max(max_y, max(y))
-        return min_x, min_y, max_x, max_y
+        else:
+
+            # If it is a MultiPolygon, iterate over its constituent polygons
+            for polygon in poly.geoms:
+                y, x = polygon.exterior.coords.xy
+                min_x = min(min_x, min(x))
+                min_y = min(min_y, min(y))
+                max_x = max(max_x, max(x))
+                max_y = max(max_y, max(y))
+    return min_x, min_y, max_x, max_y
 
 
 def add_polygon(mask, color, label=None):
@@ -51,14 +56,26 @@ def add_polygon(mask, color, label=None):
                 plt.plot(x, y, color=color)
 
 
+colors = [
+    "#1f77b4",  # muted blue
+    "#ff7f0e",  # safety orange
+    "#2ca02c",  # cooked asparagus green
+    "#d62728",  # brick red
+    "#9467bd",  # muted purple
+    "#8c564b",  # chestnut brown
+    "#e377c2",  # raspberry yogurt pink
+    "#7f7f7f",  # middle gray
+    "#bcbd22",  # curry yellow-green
+    "#17becf",  # blue-teal
+]
+
+
 def mat_plot(
     lon,
     lat,
     c,
     name,
-    poly_tight,
-    poly_train,
-    poly_valid,
+    polys,
     xlim,
     ylim,
     vlim,
@@ -67,9 +84,8 @@ def mat_plot(
 ):
 
     fig = plt.scatter(lon, lat, c=c, s=0.1, vmin=vlim[0], vmax=vlim[1], cmap=color)
-    add_polygon(poly_tight, "green")
-    add_polygon(poly_train, "blue")
-    add_polygon(poly_valid, "m")
+    for i, mask in enumerate(polys):
+        add_polygon(mask, colors[i])
     plt.xlim(xlim)
     plt.ylim(ylim)
     plt.xlabel("Lon")
@@ -80,9 +96,7 @@ def mat_plot(
     plt.close("all")
 
 
-def plot(
-    samples, predictions, targets, tight_polygon, train_polygon, validation_polygon
-):
+def plot(samples, predictions, targets, polygons):
     times = samples[:, 0]
     unique_t = np.unique(times)
     error = np.log(np.abs(predictions - targets) + 1) / np.log(10 + 1)
@@ -105,9 +119,7 @@ def plot(
             lat,
             y_pred,
             f"OIB_{date_time}_prediction.png",
-            tight_polygon,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             y_vlim,
@@ -118,9 +130,7 @@ def plot(
             lat,
             y_true,
             f"OIB_{date_time}_gt.png",
-            tight_polygon,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             y_vlim,
@@ -131,9 +141,7 @@ def plot(
             lat,
             err,
             f"OIB_{date_time}_error.png",
-            tight_polygon,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             err_vlim,
@@ -145,18 +153,16 @@ def plot(
 def main():
     opt = parser_f()
 
-    with open(opt.tight_mask, "rb") as f:
-        tight_mask = pickle.load(f)
-    with open(opt.train_mask, "rb") as f:
-        train_area = pickle.load(f)
-    with open(opt.validation_mask, "rb") as f:
-        validation_area = pickle.load(f)
+    polygons = glob(opt.polygons_folder + "/*.geojson")
+    masks = []
+    for mask in polygons:
+        masks.append(load_geojson(mask))
 
     trial_score = pd.read_csv(opt.scores_csv, index_col=0)
 
-    data = np.load(f"{opt.folder}/{opt.dataname}")
+    data = load_data(f"{opt.folder}/{opt.dataname}", opt.projection)
     data_mask_real = np.load(opt.mask)
-    names = ["tight", "train", "validation"]
+    names = [f.split(".")[0].split("/")[1] for f in polygons]
 
     results = []
     for i in range(1, opt.k + 1):
@@ -179,7 +185,7 @@ def main():
         )
         results.append(results_model)
         if i == 1:
-            plot(samples, predictions, targets, tight_mask, train_area, validation_area)
+            plot(samples, predictions, targets, masks)
         results_model.to_csv(opt.save.replace(".csv", f"_model_{i}.csv"), index=True)
 
     keep = [

@@ -9,10 +9,10 @@ import numpy as np
 from functools import partial
 import matplotlib.pylab as plt
 import matplotlib.cm as cm
-from IceSheetPINNs.dataloader import return_dataset
-from IceSheetPINNs.model_pde import IceSheet
-from IceSheetPINNs.utils import grid_on_polygon, predict, inverse_time
-import pickle
+from dataloader import return_dataset
+from model_pde import IceSheet
+from utils import grid_on_polygon, predict, inverse_time, load_data, load_geojson
+from pinns.models import INR
 
 
 def parser_f():
@@ -20,6 +20,9 @@ def parser_f():
         description="Estimating surface with INR",
     )
     parser.add_argument("--data", type=str, help="Data path (npy)")
+    parser.add_argument(
+        "--projection", default="Mercartor", type=str, help="projection to use"
+    )
     parser.add_argument("--name", type=str, help="Name given to saved files")
     parser.add_argument(
         "--yaml_file",
@@ -48,7 +51,7 @@ def parser_f():
         type=str,
         help="Whether to add a PDE for the curvature, on or off",
     )
-    parser.add_argument("--polygon", type=str, help="Polygon path")
+    parser.add_argument("--polygons_folder", type=str, help="Polygon path")
     parser.add_argument(
         "--k",
         type=int,
@@ -131,7 +134,16 @@ def plot(data, model, polygon, step_xy, step_t, name, trial, save=False):
 
 
 def setup_hp(
-    yaml_params, data, name, model, coherence, swath, dem, dem_path, pde_curve
+    yaml_params,
+    data,
+    name,
+    model,
+    coherence,
+    swath,
+    dem,
+    dem_path,
+    pde_curve,
+    projection,
 ):
     model_hp = pinns.read_yaml(yaml_params)
     gpu = torch.cuda.is_available()
@@ -160,20 +172,38 @@ def setup_hp(
 
     model_hp.pth_name = f"{name}.pth"
     model_hp.npz_name = f"{name}.npz"
+    model_hp.projection = projection
     return model_hp
 
 
 def single_run(
-    yaml_params, data, name, model, coherence, swath, dem, dem_path, pde_curve
+    yaml_params,
+    data,
+    name,
+    model,
+    coherence,
+    swath,
+    dem,
+    dem_path,
+    pde_curve,
+    projection,
 ):
     model_hp = setup_hp(
-        yaml_params, data, name, model, coherence, swath, dem, dem_path, pde_curve
+        yaml_params,
+        data,
+        name,
+        model,
+        coherence,
+        swath,
+        dem,
+        dem_path,
+        pde_curve,
+        projection,
     )
 
     return_dataset_fn = partial(return_dataset, data=data)
-    Model_cl = pinns.models.INR
     NN, model_hp = pinns.train(
-        model_hp, IceSheet, return_dataset_fn, Model_cl, gpu=model_hp.gpu
+        model_hp, IceSheet, return_dataset_fn, INR, gpu=model_hp.gpu
     )
     return NN, model_hp
 
@@ -293,7 +323,7 @@ def plot_NN(NN, model_hp, name):
 def main():
     opt = parser_f()
 
-    data = np.load(opt.data)
+    data = load_data(opt.data, opt.projection)
     NN, model_hp = single_run(
         opt.yaml_file,
         data,
@@ -304,13 +334,18 @@ def main():
         opt.dem,
         opt.dem_data,
         opt.pde_curve,
+        opt.projection,
     )
     step_t = 4
     step_xy = 0.05
-    with open(opt.polygon, "rb") as f:
-        polygon = pickle.load(f)
-    time_preds = plot(data, NN, polygon, step_xy, step_t, opt.name)
-    evaluation(NN, time_preds, step_t, opt.name)
+    if opt.projection == "NorthStereo":
+        step_xy = 1000
+
+    polygon = opt.polygons_folder + "/validation.geojson"
+    polygon = load_geojson(polygon, opt.projection)
+
+    time_preds = plot(data, NN, polygon, step_xy, step_t, opt.name, 0)  # 0 is trial
+    evaluation(NN, time_preds, step_t)
     plot_NN(NN, model_hp, opt.name)
 
 

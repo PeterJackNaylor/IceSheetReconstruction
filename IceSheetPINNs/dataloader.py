@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import pinns
+from IceSheetPINNs.utils import load_data
 
 
 def split_train(data, seed, train_fraction, swath=True):
@@ -27,19 +28,6 @@ def split_train(data, seed, train_fraction, swath=True):
     return idx_train, idx_test
 
 
-# def generate_train_val_test_set(hp, data, gpu, file):
-#     idx_test = read_test_set(file)
-#     data_train_val = data[~idx_test]
-#     data_test = data[~idx_test]
-
-#     data_train, data_val = generate_train_val_set(hp, data_train_val, gpu)
-
-#     data_test = generate_single_dataloader(hp, data_test, gpu,
-#                                             nv_samples=data_train.nv_samples, nv_targets=data_train.nv_samples,
-#                                             train=False)
-#     return data_train, data_val, data_test
-
-
 def generate_single_dataloader(
     hp, data, gpu, nv_samples=None, nv_targets=None, train=True
 ):
@@ -59,7 +47,7 @@ def generate_single_dataloader(
         hp=hp,
     )
     if hp.dem and train:
-        dem = np.load(hp.dem_data)
+        dem = load_data(hp.dem_data, hp.projection, shift=0)
         samples_dem, target_dem = dem[:, 0:2], dem[:, 2:3]
         dem_data = LaLoZ(
             samples_dem,
@@ -92,14 +80,6 @@ def return_dataset(hp, data, gpu):
         train=False,
     )
     return data_train, data_val
-
-
-# def return_dataset(hp, data, gpu=True, test_set=False, file="test_distribution.csv"):
-#     # [t, lat, lon, z, swath_id, coherence]
-#     if test_set:
-#         return generate_train_val_test_set(hp, data, gpu, file)
-#     else:
-#         return generate_train_val_set(hp, data, gpu)
 
 
 class dtypedData(pinns.DataPlaceholder):

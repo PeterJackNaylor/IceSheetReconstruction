@@ -7,8 +7,9 @@ from validation_arguments import (
     normalize,
     inverse_time,
 )
+from IceSheetPINNs.utils import load_data, load_geojson, project_polygon_to_northstereo
 from validation_icebridge import mat_plot, borne_poly
-import pickle
+from glob import glob
 import pandas as pd
 
 
@@ -16,9 +17,8 @@ def plot(
     samples,
     predictions,
     targets,
-    tight_mask,
-    train_polygon,
-    validation_polygon,
+    polygons,
+    projection,
     subsample=1,
 ):
     n = samples.shape[0]
@@ -34,15 +34,25 @@ def plot(
     error = np.log(np.abs(predictions - targets) + 1) / np.log(10 + 1)
     err_vlim = [-max(error), max(error)]
     error = np.sign(predictions - targets) * error
-    min_x_p, min_y_p, max_x_p, max_y_p = borne_poly(train_polygon)
-    xlim = [min(samples[:, 2].min(), min_x_p), max(samples[:, 2].max(), max_x_p)]
-    ylim = [min(samples[:, 1].min(), min_y_p), max(samples[:, 1].max(), max_y_p)]
+    min_x_p, min_y_p, max_x_p, max_y_p = borne_poly(polygons)
+
+    if projection == "NorthStereo":
+        xlim = [min(samples[:, 1].min(), min_x_p), max(samples[:, 1].max(), max_x_p)]
+        ylim = [min(samples[:, 2].min(), min_y_p), max(samples[:, 2].max(), max_y_p)]
+    else:
+        xlim = [min(samples[:, 2].min(), min_x_p), max(samples[:, 2].max(), max_x_p)]
+        ylim = [min(samples[:, 1].min(), min_y_p), max(samples[:, 1].max(), max_y_p)]
     y_vlim = [min(min(predictions), min(targets)), max(max(predictions), max(targets))]
+    y_vlim = [None, None]
     for t in list(unique_t):
         idx = np.where(times == t)
         samp = samples[idx]
-        lat = samp[:, 1]
-        lon = samp[:, 2]
+        if projection == "NorthStereo":
+            lat = samp[:, 2]
+            lon = samp[:, 1]
+        else:
+            lat = samp[:, 1]
+            lon = samp[:, 2]
         y_true = targets[idx]
         y_pred = predictions[idx]
         err = error[idx]
@@ -52,9 +62,7 @@ def plot(
             lat,
             y_pred,
             f"CS2_{date_time}_prediction.png",
-            tight_mask,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             y_vlim,
@@ -65,9 +73,7 @@ def plot(
             lat,
             y_true,
             f"CS2_{date_time}_gt.png",
-            tight_mask,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             y_vlim,
@@ -78,9 +84,7 @@ def plot(
             lat,
             err,
             f"CS2_{date_time}_error.png",
-            tight_mask,
-            train_polygon,
-            validation_polygon,
+            polygons,
             xlim,
             ylim,
             err_vlim,
@@ -92,19 +96,20 @@ def plot(
 def main():
     opt = parser_f()
 
-    with open(opt.tight_mask, "rb") as f:
-        tight_mask = pickle.load(f)
-    with open(opt.train_mask, "rb") as f:
-        train_area = pickle.load(f)
-    with open(opt.validation_mask, "rb") as f:
-        validation_area = pickle.load(f)
+    polygons = glob(opt.polygons_folder + "/*.geojson")
+    masks = []
+    for mask in polygons:
+        m = load_geojson(mask)
+        if opt.projection == "NorthStereo":
+            m = project_polygon_to_northstereo(m, invert=True)
+        masks.append(m)
 
     trial_score = pd.read_csv(opt.scores_csv, index_col=0)
     # NN, hp = load_model(opt.weight, opt.npz)
 
-    data = np.load(f"{opt.folder}/{opt.dataname}").astype(np.float32)
+    data = load_data(f"{opt.folder}/{opt.dataname}", opt.projection).astype(np.float32)
     data_mask_real = np.load(opt.mask)
-    names = ["tight", "train", "validation"]
+    names = [f.split(".")[0].split("/")[1] for f in polygons]
 
     results = []
     for i in range(1, opt.k + 1):
@@ -127,7 +132,7 @@ def main():
         )
         results.append(results_model)
         if i == 1:
-            plot(samples, predictions, targets, tight_mask, train_area, validation_area)
+            plot(samples, predictions, targets, masks, opt.projection)
         results_model.to_csv(opt.save.replace(".csv", f"_model_{i}.csv"), index=True)
     keep = [
         "MAE (validation)",

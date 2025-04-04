@@ -58,7 +58,7 @@ process ConvertNC2NPY {
 }
 
 pypreprocess = file("pre-processing/preprocess.py")
-params_preprocess = file("yaml_configs/" + params.name + "/" + params.pre_processing_config)
+params_preprocess = file("yaml_configs/" + params.pre_processing_config)
 
 process Pre_process {
 
@@ -78,7 +78,7 @@ process Pre_process {
 }
 
 pydemcontours = file("pre-processing/dem_contours.py")
-params_demcontours = file("yaml_configs/" + params.name + "/" + params.dem_contours_config)
+params_demcontours = file("yaml_configs/" + params.dem_contours_config)
 
 process DemFile {
 
@@ -87,15 +87,13 @@ process DemFile {
     input:
         path pydemcontours
         path params
+        path polygons_folder
     output:
         path "DEM_Contours.npy"
-        path "training_mask.pickle"
-        path "validation_mask.pickle"
-        path "tight_enveloppe.pickle"
         path "*.png"
     script:
         """
-        python $pydemcontours --params $params
+        python $pydemcontours --params $params --polygons_folder $polygons_folder
         """
 }
 
@@ -120,7 +118,7 @@ process INR {
         path dem_file
         each pde_curve
         path test_file
-        path polygon
+        path polygons_folder
         path yaml_file
 
     output:
@@ -133,6 +131,7 @@ process INR {
         name = "INR_${params.data_setup}_Model_${model}_Coh_${coherence}_Swa_${swath}_Dem_${dem}_PDEc_${pde_curve}"
         """
             python $pyinr --data $data \
+                --projection ${params.projection} \
                 --name $name \
                 --yaml_file $yaml_file \
                 --model $model \
@@ -141,7 +140,7 @@ process INR {
                 --dem $dem --dem_data $dem_file \
                 --pde_curv $pde_curve \
                 --test_file $test_file \
-                --polygon $polygon
+                --polygons_folder $polygons_folder
         """
 }
 
@@ -183,9 +182,7 @@ process FilterExternalValidation {
         path py_filter
         each val_tag
         path validation_folder
-        path tight_mask
-        path train_mask
-        path validation_mask
+        path polygons_folder
 
     output:
         tuple val(filepy_validation), val(tag), path("${tag}_mask.npy"), val(dataname)
@@ -197,9 +194,7 @@ process FilterExternalValidation {
     """
         python $py_filter --folder $validation_folder \
                                 --dataname $dataname \
-                                --tight_mask $tight_mask \
-                                --train_mask $train_mask \
-                                --validation_mask $validation_mask \
+                                --polygons_folder $polygons_folder \
                                 --save ${tag}_mask.npy
     """
 }
@@ -212,9 +207,7 @@ process ExternalValidation {
         each val_tag
         path validation_folder
         tuple path(scores), path(multiple)
-        path tight_mask
-        path train_mask
-        path validation_mask
+        path polygons_folder
 
     output:
         tuple val(tag), path("${name}___${tag}.csv")
@@ -231,13 +224,27 @@ process ExternalValidation {
     """
         python $validation_method --folder $validation_folder \
                                   --dataname $dataname \
+                                  --projection ${params.projection} \
                                   --scores_csv $scores \
                                   --multiple_folder $multiple \
-                                  --tight_mask $tight_mask \
-                                  --train_mask $train_mask \
-                                  --validation_mask $validation_mask \
+                                  --polygons_folder $polygons_folder \
                                   --mask $masks \
                                   --save ${name}___${tag}.csv
+    """
+}
+
+daily_error_plots = file("postprocessing/daily_error_plots.py")
+
+process DailyErrorPlots {
+    publishDir "${publishdir}/model_errors/", overwrite: true, pattern: "*.png"
+
+    input:
+        path model_errors
+    output:
+        path("*.png")
+    script:
+    """
+        python $daily_error_plots
     """
 }
 
@@ -305,14 +312,15 @@ workflow {
 
     main:
         test_set = file(params.datapath + "/" + params.test_set_cs2)
-        DemFile(pydemcontours, params_demcontours)
+        DemFile(pydemcontours, params_demcontours, params.polygons_folder)
         ConvertNC2NPY(pyconvert, params.datapath)
         Pre_process(pypreprocess, ConvertNC2NPY.output, params_preprocess)
         INR(pyinr, Pre_process.out, params.model, params.coherence, params.swath,
-            params.dem, DemFile.out[0], params.pde_curve, test_set, DemFile.out[2],
+            params.dem, DemFile.out[0], params.pde_curve, test_set, params.polygons_folder,
             params_inr)
-        FilterExternalValidation(filter_data_mask, validation_py, params.datapath_validation, DemFile.out[3], DemFile.out[1], DemFile.out[2])
-        ExternalValidation(FilterExternalValidation.out, params.datapath_validation, INR.out[2], DemFile.out[3], DemFile.out[1], DemFile.out[2])
+        FilterExternalValidation(filter_data_mask, validation_py, params.datapath_validation, params.polygons_folder)
+        ExternalValidation(FilterExternalValidation.out, params.datapath_validation, INR.out[2], params.polygons_folder)
+        DailyErrorPlots(ExternalValidation.out[2])
         RegroupTraining(pyregroup, INR.out[1].collect())
         RegroupValidation(pyregroup_val, ExternalValidation.out[0].groupTuple(by: 0))
         PublishCSV(pypublish, RegroupTraining.out[2], RegroupValidation.out[1].collect())

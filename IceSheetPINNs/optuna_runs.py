@@ -3,16 +3,15 @@ import gc
 import numpy as np
 import torch
 from pandas import DataFrame
-import pickle
 from functools import partial
 import optuna
 
 import pinns
 from pinns.models import INR
-from IceSheetPINNs.dataloader import return_dataset
-from IceSheetPINNs.model_pde import IceSheet
-
-from single_run import parser_f, setup_hp, plot, evaluation, save_results
+from dataloader import return_dataset
+from model_pde import IceSheet
+from single_run import parser_f, load_data, setup_hp, plot, evaluation, save_results
+from utils import load_geojson
 
 
 def sample_hp(hp, trial):
@@ -132,7 +131,7 @@ def read_test_set(data, file, n):
 def main():
     opt = parser_f()
 
-    data = np.load(opt.data)
+    data = load_data(opt.data, opt.projection)
     model_hp = setup_hp(
         opt.yaml_file,
         data,
@@ -143,6 +142,7 @@ def main():
         opt.dem,
         opt.dem_data,
         opt.pde_curve,
+        opt.projection,
     )
     model_hp.device = "cuda" if model_hp.gpu else "cpu"
 
@@ -174,6 +174,13 @@ def main():
     )
     id_trial = scores_id[-1][0]
 
+    try:
+        os.mkdir(opt.name)
+    except:
+        pass
+    polygon = opt.polygons_folder + "/validation.geojson"
+    polygon = load_geojson(polygon)
+
     metrics = []
     for trial in range(1, opt.k + 1):
         id_trial = scores_id[-trial][0]
@@ -184,12 +191,6 @@ def main():
 
         step_t = 4
         step_xy = 0.05
-        with open(opt.polygon, "rb") as f:
-            polygon = pickle.load(f)
-        try:
-            os.mkdir(opt.name)
-        except:
-            pass
         time_preds = plot(
             data_test,
             NN,

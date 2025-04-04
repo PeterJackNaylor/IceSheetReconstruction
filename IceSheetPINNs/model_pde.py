@@ -1,6 +1,35 @@
 import torch
 import pinns
 import numpy as np
+import xarray as xr
+from pyproj import Transformer
+
+
+def load_velocity(nv_samples, projection="Mercartor"):
+    path = "/Data/pnaylor/data_ice_sheet/velocity/velocity_2017_2018.nc"
+    data = xr.open_dataset(path, engine="netcdf4")
+    if projection in ["Mercartor", "NorthStereo"]:
+        source = "epsg:3413"
+        if projection == "Mercartor":
+            target = "epsg:3857"
+        elif projection == "NorthStereo":
+            target = "epsg:3411"
+        xv, yv = np.meshgrid(data.x, data.y)
+        transformer = Transformer.from_crs(
+            source,
+            target,
+            always_xy=True,
+        )
+
+        lon, lat = transformer.transform(xv, yv)
+        data.coords["x"] = (("y", "x"), lon)
+        data.coords["y"] = (("y", "x"), lat)
+        data.attrs["crs"] = f"+init={target}"
+
+    data["x"] = (data["x"] - nv_samples[2][0]) / nv_samples[2][1]
+    data["y"] = (data["y"] - nv_samples[1][0]) / nv_samples[1][1]
+    data["time"] = (data["time"] - nv_samples[2][0]) / nv_samples[2][1]
+    return data
 
 
 def spatial_temporal_grad(model, t, Lat, Lon, need_hessian):
@@ -25,6 +54,15 @@ class IceSheet(pinns.DensityEstimator):
     def __init__(self, train, test, model, model_hp, gpu, trial=None):
         self.need_hessian = "pde_curve" in model_hp.losses
         super(IceSheet, self).__init__(train, test, model, model_hp, gpu, trial)
+        self.setup_velocity()
+
+    def setup_velocity(self):
+        self.velocity = load_velocity(
+            nv_samples=self.hp.nv_samples, projection=self.hp.projection
+        )
+
+    def velocity_call(self, t, x, y):
+        return self.velocity.interp(x=x, y=y, time=t)
 
     def compute_grads(self):
         if not hasattr(self, "it_comp"):
@@ -112,3 +150,79 @@ class IceSheet(pinns.DensityEstimator):
         dtype = torch.float32
         self.use_amp = False
         self.dtype = dtype
+
+    def velocity_constraint(self, z, z_hat, weight):
+        bs = self.hp.losses["velocity_constraint"]["bs"]
+        Lat = pinns.gen_uniform(bs, self.device)
+        Lon = pinns.gen_uniform(bs, self.device)
+        M = self.M if hasattr(self, "M") else None
+        dt_max = self.hp.losses["velocity_constraint"]["dt_max"]
+        temporal_scheme = self.hp.losses["gradient_lat"]["temporal_causality"]
+        t = pinns.gen_uniform(
+            bs,
+            self.device,
+            start=0,
+            end=1,
+            temporal_scheme=temporal_scheme,
+            M=M,
+        )
+        dt = pinns.gen_uniform(
+            bs,
+            self.device,
+            start=0,
+            end=dt_max,
+            temporal_scheme=temporal_scheme,
+            M=M,
+        )
+        vx, vy, vz = self.velocity_call(t, Lat, Lon)
+        p_t1 = self.model(t + dt, Lat + dt * vx, Lon + dt * vy)
+        p_t0 = self.model(t, Lat, Lon) + dt * vz
+        return p_t1 - p_t0
+
+
+# class IceSheetVelocity(IceSheet):
+
+
+#     def fit(self):
+#         scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
+#         self.setup_optimizer()
+#         self.setup_scheduler()
+#         self.setup_losses()
+#         self.setup_validation_loss()
+#         self.setup_temporal_causality()
+#         self.model.train()
+#         self.best_test_score = np.inf
+
+#         iterators = self.range(1, self.hp.max_iters + 1, 1)
+
+#         for self.it in iterators:
+#             self.optimizer.zero_grad(set_to_none=True)
+
+#             data_batch = next(self.data)
+#             with torch.autocast(
+#                 device_type=self.device, dtype=self.dtype, enabled=self.use_amp
+#             ):
+#                 target_pred, target_pred_velocity = self.model(data_batch["x"])
+#                 self.compute_loss(target_pred, target_pred_velocity, **data_batch)
+#                 self.loss_balancing()
+#                 loss = self.sum_loss(self.loss_values, self.lambdas_scalar)
+#             scaler.scale(loss).backward()
+#             self.clip_gradients()
+
+#             scaler.step(self.optimizer)
+#             scale = scaler.get_scale()
+#             scaler.update()
+#             skip_lr_sched = scale > scaler.get_scale()
+#             if self.scheduler_status and not skip_lr_sched:
+#                 self.scheduler_update()
+#             if self.hp.verbose:
+#                 self.update_description_bar(iterators)
+
+#             self.test_and_maybe_save(self.it)
+#             self.optuna_stop(self.it)
+#             break_loop = False
+#             break_loop = self.early_stop(self.it, loss, break_loop)
+#             if break_loop:
+#                 break
+#         self.convert_last_loss_value()
+#         self.load_best_model()
