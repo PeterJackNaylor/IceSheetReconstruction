@@ -4,11 +4,14 @@ import numpy as np
 
 
 def pivot(table):
-    table = table.loc[["0", "Model", "Coh", "Swa", "Dem"]]
+    table = table.loc[["0", "Model", "Coh", "Swa", "Dem", "PDE_C", "Vel"]]
     table = table.T
     table = table.reset_index()
     table = pd.pivot_table(
-        table, values="0", index=["Model", "Coh", "Swa", "Dem"], columns="index"
+        table,
+        values="0",
+        index=["Model", "Coh", "Swa", "Dem", "PDE_C", "Vel"],
+        columns="index",
     )
     table = table.astype(float).round(2)
     return table
@@ -33,8 +36,14 @@ def main():
     table_mean = pivot(table_mean)
     table_std = pivot(table_std)
     merged = table_mean.astype(str) + " +/- " + table_std.astype(str)
-    merged = merged[["MAE", "MSE", "MED", "STD"]]
-    merged.to_csv(csv_file.replace(".csv", "_publish.csv"), float_format="%.2f")
+    if merged.shape[0] != 0:
+        merged = merged[["MAE", "MSE", "MED", "STD"]]
+        merged.to_csv(csv_file.replace(".csv", "_publish.csv"), float_format="%.2f")
+    else:
+        nan = pd.DataFrame(
+            [[np.nan] * 4], columns=["MAE", "MSE", "MED", "STD"], index=[0]
+        )
+        nan.to_csv(csv_file.replace(".csv", "_publish.csv"), float_format="%.2f")
 
 
 if __name__ == "__main__":

@@ -154,9 +154,10 @@ def main():
     opt = parser_f()
 
     polygons = glob(opt.polygons_folder + "/*.geojson")
+    polygons.sort()
     masks = []
     for mask in polygons:
-        masks.append(load_geojson(mask))
+        masks.append(load_geojson(mask, opt.projection))
 
     trial_score = pd.read_csv(opt.scores_csv, index_col=0)
 
@@ -177,17 +178,33 @@ def main():
         samples = data[idx, :-1]
         targets = data[idx, -1:]
         data_mask = data_mask_real.copy()[idx]
-
-        predictions = predict(NN, hp, samples).numpy()
-        predictions = predictions * hp.nv_targets[0][1] + hp.nv_targets[0][0]
-        results_model = evaluate(
-            targets, predictions, data[idx, 0].copy(), data_mask, names
-        )
-        results.append(results_model)
-        if i == 1:
-            plot(samples, predictions, targets, masks)
-        results_model.to_csv(opt.save.replace(".csv", f"_model_{i}.csv"), index=True)
-
+        if samples.shape[0] > 0:
+            predictions = predict(NN, hp, samples).numpy()
+            predictions = predictions * hp.nv_targets[0][1] + hp.nv_targets[0][0]
+            results_model = evaluate(
+                targets, predictions, data[idx, 0].copy(), data_mask, names
+            )
+            results.append(results_model)
+            if i == 1:
+                plot(samples, predictions, targets, masks)
+            results_model.to_csv(
+                opt.save.replace(".csv", f"_model_{i}.csv"), index=True
+            )
+        else:
+            print(f"Model {i} has no samples in the validation set")
+            pd.DataFrame(
+                {
+                    "MAE (validation)": [np.nan],
+                    "MSE (validation)": [np.nan],
+                    "MED (validation)": [np.nan],
+                    "STD (validation)": [np.nan],
+                    "N (validation)": [0],
+                }
+            ).to_csv(opt.save.replace(".csv", f"_model_{i}.csv"), index=True)
+            if i == 1:
+                plt.figure()
+                plt.title("No samples in the validation set")
+                plt.savefig(opt.save.replace(".csv", f"_model_{i}_OIB.png"))
     keep = [
         "MAE (validation)",
         "MSE (validation)",
@@ -195,7 +212,18 @@ def main():
         "STD (validation)",
         "N (validation)",
     ]
-    pd.concat(results).loc["mean", keep].to_csv(opt.save, index=False)
+    if len(results) > 1:
+        pd.concat(results).loc["mean", keep].to_csv(opt.save, index=False)
+    else:
+        pd.DataFrame(
+            {
+                "MAE (validation)": [np.nan],
+                "MSE (validation)": [np.nan],
+                "MED (validation)": [np.nan],
+                "STD (validation)": [np.nan],
+                "N (validation)": [0],
+            }
+        ).to_csv(opt.save, index=False)
 
 
 if __name__ == "__main__":

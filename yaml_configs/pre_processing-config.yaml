@@ -1,0 +1,12 @@
+# Coherence
+exclude_coherence: On
+coherence_threshold: 0.7
+# Outlier detection based on STD
+exclude_outliers: On
+exclude_std_multiple: 3. #number of std which is a threshold
+exclude_hardthreshold: 15.
+grid_size: 5000
+overlay: 0.5
+time_step: 182.625 #365.25 #30.4
+proj_latlon: '4326'
+proj_xy: '3413'

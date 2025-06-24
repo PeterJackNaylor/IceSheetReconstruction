@@ -1,5 +1,5 @@
 #training
-epochs: 50 #60 #200 #180 #00
+epochs: 40 #60 #200 #180 #00
 normalise_targets: True
 test_epochs: 10
 save_model: True
@@ -48,6 +48,26 @@ losses:
     lambda: 1.e-1
     temporal_causality: True
     method: pde_curve
+    penalty: L2
+    epsilon: 1.e-1
+  velocityINR:
+    report: True
+    bs: 8192
+    loss_balancing: True
+    lambda: 0.e+0
+    temporal_causality: False
+    dt_max: 0.1
+    method: velocityINR
+    penalty: L2
+    epsilon: 1.e-1
+  velocityConstraint:
+    report: True
+    bs: 8192
+    loss_balancing: True
+    lambda: 0.e-1
+    temporal_causality: False
+    dt_max: 0.2
+    method: velocityConstraint
     penalty: L2
     epsilon: 1.e-1
 

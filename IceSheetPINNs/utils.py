@@ -38,7 +38,7 @@ def keep_within_dem(grid, poly):
     return idx
 
 
-def predict(array, model):
+def predict(array, model, attribute="model"):
     n_data = array.shape[0]
     verbose = model.hp.verbose
     bs = model.hp.losses["mse"]["bs"]
@@ -46,6 +46,7 @@ def predict(array, model):
     range_ = range(0, n_data, bs)
     train_iterator = tqdm(range_) if verbose else range_
     preds = []
+    model_function = getattr(model, attribute)
     with torch.no_grad():
         with torch.autocast(
             device_type=model.device, dtype=model.dtype, enabled=model.use_amp
@@ -53,12 +54,12 @@ def predict(array, model):
             for i in train_iterator:
                 idx = batch_idx[i : (i + bs)]
                 samples = array[idx]
-                pred = model.model(samples)
+                pred = model_function(samples)
                 preds.append(pred)
             if i + bs < n_data:
                 idx = batch_idx[(i + bs) :]
                 samples = array[idx]
-                pred = model.model(samples)
+                pred = model_function(samples)
                 preds.append(pred)
     preds = torch.cat(preds)
     return preds
@@ -72,17 +73,17 @@ def inverse_time(time_array):
 
 def Mercartor_to_North_Stereo(lat, lon):
     proj_transformer = pyproj.transformer.Transformer.from_crs(
-        "epsg:4326", "epsg:3411", always_xy=True
+        "epsg:4326", "epsg:3411", always_xy=False
     )
-    x, y = proj_transformer.transform(lon, lat)
+    y, x = proj_transformer.transform(lat, lon)
     return x, y
 
 
 def North_Stereo_to_Mercartor(x, y):
     proj_transformer_inverse = pyproj.transformer.Transformer.from_crs(
-        "epsg:3411", "epsg:4326"
+        "epsg:3411", "epsg:4326", always_xy=False
     )
-    lat, lon = proj_transformer_inverse.transform(x, y)
+    lat, lon = proj_transformer_inverse.transform(y, x)
     return lat, lon
 
 
@@ -121,5 +122,5 @@ def load_geojson(file, projection="mercartor"):
     polygon = np.array(data)
     polygon = Polygon(polygon[:, [1, 0]])
     if projection == "NorthStereo":
-        polygon = project_polygon_to_northstereo(polygon)
+        polygon = project_polygon_to_northstereo(polygon, invert=False)
     return polygon

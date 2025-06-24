@@ -14,9 +14,26 @@ def main():
         std.columns = cols
         tab = pd.concat([tab, std], axis=1)
         f, ext = f.split(".")[0].split("___")
-        _, dataconfig, _, model, _, coherence, _, swath, _, dem, _, pde_curve = f.split(
-            "."
-        )[0].split("_")
+        # if "velocity_inr" in f:
+        #     f = f.replace("velocity_inr", "velocityINR")
+        # if "mini_velocity" in f:
+        #     f = f.replace("mini_velocity", "minivelocity")
+        (
+            _,
+            dataconfig,
+            _,
+            model,
+            _,
+            coherence,
+            _,
+            swath,
+            _,
+            dem,
+            _,
+            pde_curve,
+            _,
+            velocity,
+        ) = f.split(".")[0].split("_")
         tab.columns = [f"{el} [{f}]" for el in tab.columns]
         for key in tab.columns:
             if key != "N":
@@ -25,6 +42,7 @@ def main():
                 tab.loc["Swa", key] = swath
                 tab.loc["Dem", key] = dem
                 tab.loc["PDE_C", key] = pde_curve
+                tab.loc["Vel", key] = velocity
 
         tables.append(tab)
     final = pd.concat(tables, axis=1)

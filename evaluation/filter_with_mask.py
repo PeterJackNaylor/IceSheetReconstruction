@@ -34,6 +34,7 @@ def main():
     opt = parser_f()
 
     polygons = glob(opt.polygons_folder + "/*.geojson")
+    polygons.sort()
     masks = []
     for mask in polygons:
         masks.append(load_geojson(mask))

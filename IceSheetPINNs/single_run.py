@@ -13,6 +13,7 @@ from dataloader import return_dataset
 from model_pde import IceSheet
 from utils import grid_on_polygon, predict, inverse_time, load_data, load_geojson
 from pinns.models import INR
+from datetime import datetime
 
 
 def parser_f():
@@ -51,6 +52,12 @@ def parser_f():
         type=str,
         help="Whether to add a PDE for the curvature, on or off",
     )
+    parser.add_argument(
+        "--velocity",
+        type=str,
+        default="Off",
+        help="Whether to add the velocity penalty, on or off",
+    )
     parser.add_argument("--polygons_folder", type=str, help="Polygon path")
     parser.add_argument(
         "--k",
@@ -70,6 +77,15 @@ def parser_f():
     args.pde_curve = args.pde_curve == "true"
 
     return args
+
+
+def convert_time(date):
+    date_format = "%d-%m-%Y"
+    date_obj = datetime.strptime(date, date_format)
+    # step in days
+    ref = pd.Timestamp(datetime(2010, 7, 1))
+    time_in_days = (date_obj - ref).days
+    return time_in_days
 
 
 def plot(data, model, polygon, step_xy, step_t, name, trial, save=False):
@@ -133,6 +149,59 @@ def plot(data, model, polygon, step_xy, step_t, name, trial, save=False):
     return time_predictions
 
 
+def plot_velocity(data, model, polygon, step_xy, name, trial, save=False):
+    try:
+        os.mkdir(name)
+    except:
+        pass
+
+    grid, idx, n, p = grid_on_polygon(polygon, step_xy)
+    vmin, vmax = -5, 5
+    extent = [grid[:, 1].min(), grid[:, 1].max(), grid[:, 0].min(), grid[:, 0].max()]
+    results = np.zeros_like(grid[:, 0])
+    time_nrm = model.data.nv_samples[0]
+    lat_nrm = model.data.nv_samples[1]
+    lon_nrm = model.data.nv_samples[2]
+    v_nrm = model.data.nv_targets_v
+
+    grid[:, 0] = (grid[:, 0] - lat_nrm[0]) / lat_nrm[1]
+    grid[:, 1] = (grid[:, 1] - lon_nrm[0]) / lon_nrm[1]
+    xyt = np.column_stack([results[idx].copy(), grid[idx]])
+    v_results = np.zeros((n, p)).flatten()
+    time_range = [2017, 2018, 2019, 2020]
+    time_range_unnrm = [convert_time(f"02-07-{el}") for el in time_range]
+    time_range = [(el - time_nrm[0]) / time_nrm[1] for el in time_range_unnrm]
+
+    for it in range(len(time_range)):
+        xyt[:, 0] = time_range[it]
+        tensor_xyt = torch.from_numpy(xyt).to(model.device, dtype=model.dtype)
+        prediction = predict(tensor_xyt, model, attribute="model_velocity")
+        prediction = prediction.to("cpu", dtype=torch.float64).numpy()
+        v_lat = prediction[:, 0] * v_nrm[0][1] + v_nrm[0][0]
+        v_lon = prediction[:, 1] * v_nrm[1][1] + v_nrm[1][0]
+        v_z = prediction[:, 2] * v_nrm[2][1] + v_nrm[2][0]
+        for v, vname in [
+            (v_lat, "north_velocity"),
+            (v_lon, "eastern_velocity"),
+            (v_z, "vertical_velocity"),
+        ]:
+            v_results = np.zeros((n, p)).flatten()
+            v_results[idx] = v.copy()
+            vel_map = v_results.reshape(n, p, order="F")
+            vel_map[vel_map == 0] = np.nan
+            date = str(inverse_time(time_range_unnrm[it]).date())
+            plt.imshow(
+                vel_map[::-1], extent=extent, vmin=vmin, vmax=vmax, aspect="auto"
+            )
+            plt.xlabel("Lon")
+            plt.ylabel("Lat")
+            plt.title(f"Altitude at {date}")
+            plt.colorbar()
+            plt.savefig(f"{name}/velocity_{vname}_{date}.png")
+            plt.close()
+    return
+
+
 def setup_hp(
     yaml_params,
     data,
@@ -143,6 +212,7 @@ def setup_hp(
     dem,
     dem_path,
     pde_curve,
+    velocity,
     projection,
 ):
     model_hp = pinns.read_yaml(yaml_params)
@@ -169,7 +239,16 @@ def setup_hp(
         del model_hp.losses["dem"]
     if not pde_curve:
         del model_hp.losses["pde_curve"]
-
+    if velocity == "false":
+        del model_hp.losses["velocityINR"]
+        del model_hp.losses["velocityConstraint"]
+    # elif velocity == "velocity_interp":
+    #     model_hp.losses["velocityConstraint"]["method"] = "velocityConstraint"
+    elif velocity == "velocityINR":
+        try:
+            model_hp.losses["velocityConstraint"]["method"] = "velocityField"
+        except:
+            pass
     model_hp.pth_name = f"{name}.pth"
     model_hp.npz_name = f"{name}.npz"
     model_hp.projection = projection
@@ -186,6 +265,7 @@ def single_run(
     dem,
     dem_path,
     pde_curve,
+    velocity,
     projection,
 ):
     model_hp = setup_hp(
@@ -198,6 +278,7 @@ def single_run(
         dem,
         dem_path,
         pde_curve,
+        velocity,
         projection,
     )
 
@@ -334,6 +415,7 @@ def main():
         opt.dem,
         opt.dem_data,
         opt.pde_curve,
+        opt.velocity,
         opt.projection,
     )
     step_t = 4
@@ -344,7 +426,10 @@ def main():
     polygon = opt.polygons_folder + "/validation.geojson"
     polygon = load_geojson(polygon, opt.projection)
 
-    time_preds = plot(data, NN, polygon, step_xy, step_t, opt.name, 0)  # 0 is trial
+    time_preds = plot(
+        data, NN, polygon, step_xy, step_t, opt.name, 0, True
+    )  # 0 is trial
+    plot_velocity(data, NN, polygon, step_xy, opt.name, 0)  # 0 is trial
     evaluation(NN, time_preds, step_t)
     plot_NN(NN, model_hp, opt.name)
 

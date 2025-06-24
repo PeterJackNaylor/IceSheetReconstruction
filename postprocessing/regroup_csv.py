@@ -12,17 +12,35 @@ def main():
         cols = [el + " (std)" for el in std.columns]
         std.columns = cols
         tab = pd.concat([tab, std], axis=1)
-        _, dataconfig, _, model, _, coherence, _, swath, _, dem, _, pde_curve = f.split(
-            "."
-        )[0].split("_")
+        # if "velocity_inr" in f:
+        #     f = f.replace("velocity_inr", "velocityINR")
+        # if "mini_velocity" in f:
+        #     f = f.replace("mini_velocity", "minivelocity")
+        (
+            _,
+            dataconfig,
+            _,
+            model,
+            _,
+            coherence,
+            _,
+            swath,
+            _,
+            dem,
+            _,
+            pde_curve,
+            _,
+            velocity,
+        ) = f.split(".")[0].split("_")
         tab["Model"] = model
         tab["Coh"] = coherence
         tab["Swa"] = swath
         tab["Dem"] = dem
         tab["PDE_C"] = pde_curve
+        tab["Vel"] = velocity
         tables.append(tab)
     final = pd.concat(tables)
-    final = final.groupby(["Model", "Coh", "Swa", "Dem", "PDE_C"]).mean()
+    final = final.groupby(["Model", "Coh", "Swa", "Dem", "PDE_C", "Vel"]).mean()
     final.to_csv(f"{sys.argv[1]}.csv")
     keep = [
         "Time std",
@@ -35,7 +53,7 @@ def main():
     final[keep].to_csv(f"{sys.argv[1]}_reduced.csv")
 
     nicer_df = final[keep].round(2)
-    nicer_df = nicer_df.groupby(["Model", "Coh", "Swa", "Dem"]).mean()
+    nicer_df = nicer_df.groupby(["Model", "Coh", "Swa", "Dem", "PDE_C", "Vel"]).mean()
     nicer_df_mean = nicer_df[["Time std", "MAE (Test)", "RMSE (Test)"]]
     nicer_df_std = nicer_df[["Time std (std)", "MAE (Test) (std)", "RMSE (Test) (std)"]]
     nicer_df_std.columns = ["Time std", "MAE (Test)", "RMSE (Test)"]

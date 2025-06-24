@@ -15,7 +15,7 @@ def main():
         npz = f"optuna_{number}.npz"
         pth = f"optuna_{number}.pth"
         outname = f"{sys.argv[2]}_{j}"
-        dst = f"/home/pnaylor/best_models_icesheet/{sys.argv[1]}/{sys.argv[2]}/"
+        dst = f"/home/pnaylor/best_models_icesheet/rerun_22_06_25/{sys.argv[1]}/{sys.argv[2]}/"
         shutil.copyfile(src + npz, dst + outname + ".npz")
         shutil.copyfile(src + pth, dst + outname + ".pth")
 

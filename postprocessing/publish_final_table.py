@@ -24,24 +24,29 @@ def create_data(files, index, subname):
             df = pd.read_csv(f)
             df = df[df.columns[index:]]
             d[name] = df
-    table = pd.concat(d, axis=1)
+    if d:
+        table = pd.concat(d, axis=1)
+    else:
+        table = pd.DataFrame()
     return table
 
 
 def main():
 
-    CS2_files = [
-        "CS2_mini_publish.csv",
-        "CS2_mini_test_publish.csv",
-        "CS2_small_publish.csv",
-        "CS2_small_test_publish.csv",
-        "CS2_medium_publish.csv",
-        "CS2_medium_test_publish.csv",
-        "CS2_all_publish.csv",
-        "CS2_all_test_publish.csv",
-    ]
-    OIB_files = ["OIB_small_publish.csv", "OIB_medium_publish.csv", "OIB_publish.csv"]
-    GeoSAR_file = "GeoSAR_publish.csv"
+    # CS2_files = [
+    #     "CS2_mini_publish.csv",
+    #     "CS2_mini_test_publish.csv",
+    #     "CS2_small_publish.csv",
+    #     "CS2_small_test_publish.csv",
+    #     "CS2_medium_publish.csv",
+    #     "CS2_medium_test_publish.csv",
+    #     "CS2_all_publish.csv",
+    #     "CS2_all_test_publish.csv",
+    # ]
+    CS2_files = glob("CS2*publish.csv")
+    OIB_files = glob("OIB*publish.csv")
+    # OIB_files = ["OIB_small_publish.csv", "OIB_medium_publish.csv", "OIB_publish.csv"]
+    GeoSAR_file = glob("GeoSAR*publish.csv")
     training_file = f"{sys.argv[1]}_publish.csv"
 
     idx_cols = determine_index_number(training_file)
@@ -52,16 +57,16 @@ def main():
     training_df = pd.concat({"Training": training_df}, axis=1)
     cs2 = create_data(CS2_files, idx_cols, "CS2_")
     OIB = create_data(OIB_files, idx_cols, "OIB_")
-    Geosar = create_data([GeoSAR_file], idx_cols, "")
+    Geosar = create_data(GeoSAR_file, idx_cols, "")
+    entries = [
+        ("Hyperparameters", index),
+        ("Training", training_df),
+        ("CS2", cs2),
+        ("OIB", OIB),
+        ("GeoSAR", Geosar),
+    ]
     final_table = pd.concat(
-        {
-            "Hyperparameters": index,
-            "Training": training_df,
-            "CS2": cs2,
-            "OIB": OIB,
-            "GeoSAR": Geosar,
-        },
-        axis=1,
+        {name: values for name, values in entries if values.shape[0]}, axis=1
     )
     final_table.to_csv(f"{sys.argv[1]}_beautiful.csv", index=False)
 

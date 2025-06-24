@@ -1,10 +1,10 @@
 #training
-epochs: 40 #60 #200 #180 #00
+epochs: 30 #50 #60 #200 #180 #00
 normalise_targets: True
-test_epochs: 10
+test_epochs: 5 #0
 save_model: True
 seed: 42
-train_fraction: 0.9  #because 10percent taken for test set
+train_fraction: 0.9 #because 10percent taken for test set
 
 #Models
 model:
@@ -26,6 +26,25 @@ model:
   sigma0: 40
   trainable: True
 
+#Models
+velocity_model:
+  name: RFF #or RFF/SIREN/WIRES
+  hidden_nlayers: 4
+  hidden_width: 128
+  scale: 10.
+  skip: False
+  ## RFF specific
+  mapping_size: 256
+  activation: tanh
+  modified_mlp: False # if you have a seperate encoder for the spatial and temporal inputs.
+  linear: HE # HE # Glorot # RWF RWF does not work with SIREN
+  # RWF Specific
+  mean: 1
+  std: 0.1
+  # WIRES Specific
+  omega0: 10
+  sigma0: 40
+  trainable: True
 
 # Lambda values in the loss
 validation_loss: mse
@@ -41,7 +60,7 @@ losses:
     lambda: 1.e-1
     method: dem
     temporal_causality: False
-  pde_curve:
+  pde_curve: #on but deactivates from main script
     report: True
     bs: 8192
     loss_balancing: True
@@ -54,7 +73,7 @@ losses:
     report: True
     bs: 8192
     loss_balancing: True
-    lambda: 0.e+0
+    lambda: 1.e+0
     temporal_causality: False
     dt_max: 0.1
     method: velocityINR
@@ -64,12 +83,13 @@ losses:
     report: True
     bs: 8192
     loss_balancing: True
-    lambda: 0.e-1
+    lambda: 1.e-1
     temporal_causality: False
     dt_max: 0.2
     method: velocityConstraint
     penalty: L2
     epsilon: 1.e-1
+
 
   gradient_lat:
     report: True
@@ -160,5 +180,5 @@ cosine_anealing:
 
 
 optuna:
-  patience: 5000
-  trials: 100
+  patience: 10000
+  trials: 50

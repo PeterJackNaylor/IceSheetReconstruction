@@ -16,19 +16,39 @@ from utils import load_geojson
 
 def sample_hp(hp, trial):
     # keys = [k for k in hp.losses.keys() if not hp.losses[k]["loss_balancing"]]
-    for k in ["gradient_lat", "gradient_lon"]:  # keys:
-        hp.losses[k]["lambda"] = trial.suggest_float(
-            f"l_{k}",
-            1e-4,
-            1e0,
-            log=True,
-        )
-    hp.losses["gradient_time_L1"]["lambda"] = trial.suggest_float(
-        "l_gradient_time_L1",
-        1e-4,
-        1e4,
-        log=True,
-    )
+    keys = [
+        "dem",
+        "pde_curve",
+        "velocityINR",
+        "velocityConstraint",
+        "gradient_lat",
+        "gradient_lon",
+        "gradient_time_L1",
+    ]
+    for k in keys:  # keys:
+        if k in hp.losses.keys():
+            if k in ["gradient_lat", "gradient_lon"]:
+                hp.losses[k]["lambda"] = trial.suggest_float(
+                    f"l_{k}",
+                    1e-4,
+                    1e0,
+                    log=True,
+                )
+            elif k in ["gradient_time_L1"]:
+                hp.losses[k]["lambda"] = trial.suggest_float(
+                    f"l_{k}",
+                    1e-4,
+                    1e4,
+                    log=True,
+                )
+            else:
+                hp.losses[k]["lambda"] = trial.suggest_float(
+                    f"l_{k}",
+                    1e-4,
+                    1e2,
+                    log=True,
+                )
+
     if hp.model["name"] == "KAN":
         hidden_layers = [1, 3]
         hp.model["hidden_width"] = trial.suggest_int("hidden_width", 8, 32)
@@ -39,14 +59,16 @@ def sample_hp(hp, trial):
     elif hp.model["name"] == "MFN":
         hp.model["skip"] = False
         hidden_layers = [4, 7]
+    elif hp.model["name"] == "SIREN":
+        hidden_layers = [10, 16]
     else:
         hp.model["scale"] = trial.suggest_float("scale", 1e-3, 1e0, log=True)
-        hidden_layers = [4, 12]
+        hidden_layers = [6, 12]
     hp.model["hidden_nlayer"] = trial.suggest_int(
         "layers", hidden_layers[0], hidden_layers[1]
     )
 
-    hp.lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+    hp.lr = trial.suggest_float("lr", 5e-5, 1e-3, log=True)
 
     return hp
 
@@ -121,8 +143,17 @@ def get_n_best_trials(study):
 
 
 def read_test_set(data, file, n):
-    test_times = np.loadtxt(file)
-    idx_test = np.where(np.isin(data[:, 0], test_times))[0]
+    print("need to normalise bins with respect to each temporal range.")
+    if "mini" in file:
+        sub = 1120
+    elif "small" in file:
+        sub = 1071
+    elif "medium" in file:
+        sub = 911
+    else:
+        sub = 0
+    test_times = np.load(file)
+    idx_test = np.where(np.isin(data[:, 4], test_times - sub))[0]
     features = np.zeros(n, dtype=bool)
     features[idx_test] = True
     return features
@@ -142,6 +173,7 @@ def main():
         opt.dem,
         opt.dem_data,
         opt.pde_curve,
+        opt.velocity,
         opt.projection,
     )
     model_hp.device = "cuda" if model_hp.gpu else "cpu"
@@ -179,7 +211,7 @@ def main():
     except:
         pass
     polygon = opt.polygons_folder + "/validation.geojson"
-    polygon = load_geojson(polygon)
+    polygon = load_geojson(polygon, opt.projection)
 
     metrics = []
     for trial in range(1, opt.k + 1):
@@ -190,7 +222,7 @@ def main():
         NN = load_model(model_hp, weights, npz, data)
 
         step_t = 4
-        step_xy = 0.05
+        step_xy = 0.05 if opt.projection == "Mercartor" else 1000
         time_preds = plot(
             data_test,
             NN,

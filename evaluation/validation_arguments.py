@@ -6,6 +6,21 @@ import numpy as np
 from tqdm import trange
 import pandas as pd
 from datetime import datetime
+import time
+from functools import wraps
+
+
+def timeit(func):
+    @wraps(func)  # Preserves function metadata
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()  # High-resolution timer
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        elapsed = end_time - start_time
+        print(f"{func.__name__} executed in {elapsed:.4f} seconds")
+        return result
+
+    return wrapper
 
 
 def parser_f():
@@ -142,6 +157,7 @@ def inverse_time(time_array):
     return time_in_days
 
 
+@timeit
 def evaluate(targets, preds, time, data_mask, names):
     # this function needs to be accelerated
     # the for loop and feature handeling
@@ -198,4 +214,73 @@ def evaluate(targets, preds, time, data_mask, names):
             results.loc[date_time, f"STD ({name})"] = STD
             results.loc[date_time, f"N ({name})"] = y_true.shape[0]
     results.loc["mean"] = results.mean(axis=0)
+    return results
+
+
+@timeit
+def evaluate_fast(targets, preds, time, swath_id, data_mask, names):
+    # Preprocess data_mask and names
+    data_mask = np.column_stack(
+        [np.ones(data_mask.shape[0], dtype=data_mask.dtype), data_mask]
+    )
+    names = ["All"] + names
+
+    # Sort everything by time
+    order = swath_id.argsort()
+    targets = targets[order]
+    preds = preds[order]
+    swath_id = swath_id[order]
+    data_mask = data_mask[order]
+    time = time[order]
+
+    # Get unique time indexes more efficiently
+    unique_swath_id, swath_id_indices = np.unique(swath_id, return_index=True)
+    indexes = np.split(np.arange(swath_id.shape[0]), swath_id_indices[1:])
+    # time[indexes]
+    # Pre-allocate results array
+    n_metrics = 5  # MAE, MSE, MED, STD, N
+    results_data = np.empty((len(unique_swath_id) + 1, len(names) * n_metrics))
+    results_data[:] = np.nan
+
+    # Process each feature
+    for i, name in enumerate(names):
+        col_base = i * n_metrics
+        mask = data_mask[:, i]
+
+        for sid_idx, idx in enumerate(indexes):
+            time_mask = np.zeros_like(mask, dtype=bool)
+            time_mask[idx] = True
+            combined_mask = time_mask & mask
+
+            y_true = targets[combined_mask]
+            y_pred = preds[combined_mask]
+            n_samples = len(y_true)
+
+            if n_samples > 0:
+                diff = y_true - y_pred
+                results_data[sid_idx, col_base] = np.mean(np.abs(diff))  # MAE
+                results_data[sid_idx, col_base + 1] = np.mean(diff**2)  # MSE
+                results_data[sid_idx, col_base + 2] = np.median(diff)  # MED
+                results_data[sid_idx, col_base + 3] = np.std(diff)  # STD
+            results_data[sid_idx, col_base + 4] = n_samples  # N
+
+    # Calculate mean row
+    results_data[-1] = np.nanmean(results_data[:-1], axis=0)
+
+    # Create column names
+    columns = []
+    for name in names:
+        columns += [
+            f"MAE ({name})",
+            f"MSE ({name})",
+            f"MED ({name})",
+            f"STD ({name})",
+            f"N ({name})",
+        ]
+
+    # Create DataFrame with time labels
+    # import pdb; pdb.set_trace()
+    date_times = [inverse_time(t) for t in time[swath_id_indices]] + ["mean"]
+    results = pd.DataFrame(results_data, index=date_times, columns=columns)
+
     return results
