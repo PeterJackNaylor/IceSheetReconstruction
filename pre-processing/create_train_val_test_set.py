@@ -42,19 +42,22 @@ def stamp_to_int(time_array):
 
 def load_data(path):
     data = np.load(path)
-    data = data[:, :4]
+    data = data[:, :5]
     time = inverse_time(data[:, 0])
-    data = pd.DataFrame(data, columns=["Time", "Lat", "Lon", "Z"])
+    if data.shape[1] == 5:
+        data = pd.DataFrame(data, columns=["Time", "Lat", "Lon", "Z", "swath_id"])
+    else:
+        data = pd.DataFrame(data, columns=["Time", "Lat", "Lon", "Z"])
     data["Time"] = time
     return data
 
 
 data_oib = load_data(
-    "/Data/pnaylor/data_ice_sheet_validation/oib_within_petermann_ISRIN_time.npy"
+    "oib_within_petermann_ISRIN_time.npy"  # "/Data/pnaylor/data_ice_sheet_validation/oib_within_petermann_ISRIN_time.npy"
 )
 times_oib = data_oib["Time"].unique()
 data_geosar = load_data(
-    "/Data/pnaylor/data_ice_sheet_validation/GeoSAR_Petermann_xband_prep.npy"
+    "GeoSAR_Petermann_xband_prep.npy"  # "/Data/pnaylor/data_ice_sheet_validation/GeoSAR_Petermann_xband_prep.npy"
 )
 times_geosar = data_geosar["Time"].unique()
 
@@ -73,9 +76,7 @@ axes_shifted = {
 }
 
 
-all_path = (
-    "/home/pnaylor/IceSheetReconstruction/outputs/large/data/preprocessed/p-data.npy"
-)
+all_path = "p-data.npy"  # "/home/pnaylor/IceSheetReconstruction/outputs/large/data/preprocessed/p-data.npy"
 
 data_cs2 = load_data(all_path)
 times_cs2 = data_cs2["Time"].unique()
@@ -123,3 +124,4 @@ for name in ["mini", "small", "medium", "all"]:
     df["Time"] = set_time(df["Time"])
     np.savetxt(f"{name}_test_set_cs2.txt", picked_int)
     np.save(f"{name}_test_set_cs2.npy", df.values)
+    np.save(f"{name}_test_set_cs2_swath_id.npy", df.swath_id.unique())

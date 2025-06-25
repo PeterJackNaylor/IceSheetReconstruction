@@ -11,6 +11,7 @@ from IceSheetPINNs.generate_gif import (
     predict,
     inverse_time,
 )
+from IceSheetPINNs.utils import Mercartor_to_North_Stereo
 import plotly.express as px
 import matplotlib as mpl
 import matplotlib.pylab as plt
@@ -20,6 +21,7 @@ import matplotlib.dates as mdates
 import torch
 import xarray as xr
 from scipy.interpolate import griddata
+from PIL import Image
 
 mpl.use("Agg")
 
@@ -197,6 +199,10 @@ def load_data(
 
     if type_ == "Prediction":
         NN, hp = load_model_folder(model_name, model_path)
+        projection = "NorthStereo"
+        if projection == "NorthStereo":
+            data[:, 2], data[:, 1] = Mercartor_to_North_Stereo(data[:, 1], data[:, 2])
+
         prediction = predict(NN, hp, data)
         prediction = prediction * hp.nv_targets[0][1] + hp.nv_targets[0][0]
         data = np.concatenate([data[:, 1:3], prediction], axis=1)
@@ -247,13 +253,31 @@ def min_max_list_array(list_, image_sub):
 
 
 def create_gif(grid, list_array, time_range, type_, image_sub):
+
     plt.close()
     vmins = min_max_list_array(list_array, image_sub)
     fig, ax = plt.subplots(figsize=(12, 6))
-    img = plt.imread("/Users/peter.naylor/tmp/icesheet/artic5.png")
+    projection = "NorthStereo"
+    if projection == "NorthStereo":
+        # import pdb; pdb.set_trace()
+        # grid[:, 1], grid[:, 0] = Mercartor_to_North_Stereo(grid[:, 0], grid[:, 1])
+        img_pil = Image.open(
+            "/Users/peter.naylor/tmp/icesheet/Artic_withoutannotation.png"
+        )
+        rotated_pil = img_pil.rotate(12, expand=True, resample=Image.BILINEAR)
+        img = np.array(rotated_pil).astype(
+            "uint8"
+        )  # Convert back to [0,1] range if needed
+        extent = [-495000, -495000 + 465000.00, -850000 - 331500, -850000]
+    else:
+        img = (plt.imread("/Users/peter.naylor/tmp/icesheet/artic5.png") * 255).astype(
+            "uint8"
+        )
+        extent = [-72.1, -72.1 + 24.00, 81.33 - 2.02, 81.33]
+
     ax.imshow(
-        (img * 255).astype("uint8"),
-        extent=[-72.1, -72.1 + 24.00, 81.33 - 2.02, 81.33],
+        img,
+        extent=extent,
         aspect="auto",
         zorder=0,
     )
@@ -345,6 +369,7 @@ def create_gif(grid, list_array, time_range, type_, image_sub):
 
         # Create the new colormap
         cmap = mcolors.ListedColormap(colors_with_transparency)
+
     scat = ax.scatter(
         x=grid[:, 1],
         y=grid[:, 0],
@@ -430,9 +455,12 @@ def make_gif(
     ts = list(range(time_start, time_end + temporal_res, temporal_res))
     if type_ == "Prediction":
         NN, hp = load_model_folder(model_name, model_path)
+    projection = "NorthStereo"
+    if projection == "NorthStereo":
+        data[:, 2], data[:, 1] = Mercartor_to_North_Stereo(data[:, 1], data[:, 2])
 
-    model = "large_hpc_RFF_Coh_true_Swa_false_Dem_true_{}"
-    models = [model.format(i) for i in range(1, 6)]
+    # model = "large_hpc_RFF_Coh_true_Swa_false_Dem_true_{}"
+    # models = [model.format(i) for i in range(1, 6)]
 
     for t in ts:
         if type_ == "GT":
@@ -441,15 +469,19 @@ def make_gif(
             z[idx] = data[idx, -1].copy()
         elif type_ == "Prediction":
             data[:, 0] = t
-            z_tmp = []
-            for mod in models:
-                NN, hp = load_model_folder(model_name, model_path)
-                prediction = predict(NN, hp, data)
-                z = prediction * hp.nv_targets[0][1] + hp.nv_targets[0][0]
-                z = z.cpu().numpy()
-                z = z[:, 0]
-                z_tmp.append(z)
-            z = np.stack(z_tmp).mean(axis=0)
+            prediction = predict(NN, hp, data)
+            z = prediction * hp.nv_targets[0][1] + hp.nv_targets[0][0]
+            z = z.cpu().numpy()
+            z = z[:, 0]
+            # z_tmp = []
+            # for mod in models:
+            #     NN, hp = load_model_folder(model_name, model_path)
+            #     prediction = predict(NN, hp, data)
+            #     z = prediction * hp.nv_targets[0][1] + hp.nv_targets[0][0]
+            #     z = z.cpu().numpy()
+            #     z = z[:, 0]
+            #     z_tmp.append(z)
+            # z = np.stack(z_tmp).mean(axis=0)
         zs.append(z)
 
     data = data[:, 1:]

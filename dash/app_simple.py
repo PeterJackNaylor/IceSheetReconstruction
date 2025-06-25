@@ -20,7 +20,8 @@ from dash_utils import (
     make_gif,
     open_dem,
 )
-
+from PIL import Image
+from io import BytesIO
 import matplotlib.animation as animation
 
 if platform == "linux" or platform == "linux2":
@@ -35,7 +36,7 @@ raw_data = f"{data_folder}/raw_data"
 polygon_paths = f"{data_folder}/masks"
 model_path = f"{data_folder}/models"
 outputs = f"{data_folder}/outputs"
-path_models = glob(f"{model_path}/*.npz")
+path_models = glob(f"{model_path}/*/*/*.npz")  # f"{model_path}/*.npz"
 options_models = [el.replace(model_path + "/", "").split(".")[0] for el in path_models]
 options_models.sort()
 available_polygons = glob(f"{polygon_paths}/*.pickle")
@@ -395,17 +396,37 @@ def update_bar_chart(
     import base64
 
     # set a local image as a background
-    image_filename = "/Users/peter.naylor/tmp/icesheet/artic5.png"
-    plotly_logo = base64.b64encode(open(image_filename, "rb").read())
+    image_filename = "/Users/peter.naylor/tmp/icesheet/Artic_withoutannotation.png"
+    image = Image.open(image_filename)
+    if image.mode == "RGBA":
+        image = image.convert("RGB")  # Remove alpha channel
+    rotated_image = image.rotate(12, expand=True)  # 15 degrees rotation
+
+    # Save rotated image to a bytes buffer
+    buffered = BytesIO()
+    rotated_image.save(buffered, format="JPEG")
+    plotly_logo = base64.b64encode(buffered.getvalue())
+
+    # image_filename = "/Users/peter.naylor/tmp/icesheet/WithAnnotation.png"
+    # plotly_logo = base64.b64encode(open(image_filename, "rb").read())
+    projection = "NorthStereo"  # "Mercator" # "Orthographic"
+    if projection == "Mercator":
+        x0, y0 = -72.1, 81.33
+        sizex, sizey = 24.00, 2.02
+    else:
+        x0, y0 = -495000, -850000  # (-428641.101216624, -837638.1577899001)
+        # sizex, sizey = 390000.00, 265000
+        sizex, sizey = 465000.00, 331500
+
     fig.add_layout_image(
         dict(
             source="data:image/jpg;base64,{}".format(plotly_logo.decode()),
             xref="x",
             yref="y",
-            x=-72.1,
-            y=81.33,
-            sizex=24.00,
-            sizey=2.02,
+            x=x0,
+            y=y0,
+            sizex=sizex,
+            sizey=sizey,
             sizing="stretch",
             # opacity=0.5,
             layer="below",
