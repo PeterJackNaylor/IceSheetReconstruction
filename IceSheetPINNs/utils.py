@@ -16,8 +16,8 @@ def grid_on_polygon(poly, step):
 
 def setup_uniform_grid(pc, step):
     xmin, ymin, xmax, ymax = pc.bounds
-    xx_grid = np.arange(xmin, xmax, step)
-    yy_grid = np.arange(ymin, ymax, step * 2)
+    xx_grid = np.arange(xmin, xmax, step / 6)
+    yy_grid = np.arange(ymin, ymax, step)
     xx, yy = np.meshgrid(
         xx_grid,
         yy_grid,
