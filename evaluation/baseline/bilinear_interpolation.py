@@ -71,12 +71,17 @@ def evaluate_model(support, z, new_locations, delta=15, downsample=1):
     return z_hat
 
 
+data_path = "/Data/pnaylor/data_ice_sheet_validation"
+mask_path = "/Data/pnaylor/ice_sheet_masks/"
+test_split_path = "/Data/pnaylor/data_ice_sheet/"
+
+
 def datasets():
     data_pairs = [
-        # ("GeoSAR_Petermann_xband_prep.npy", "GeoSAR_mask.npy", "geosar"),
-        # ("mini_small_oib.npy", "OIB_small_mask.npy", "oib_small"),
-        # ("medium_oib.npy", "OIB_medium_mask.npy", "oib_medium"),
-        # ("oib_within_petermann_ISRIN_time.npy", "OIB_mask.npy", "oib"),
+        ("GeoSAR_Petermann_xband_prep.npy", "GeoSAR_mask.npy", "geosar"),
+        ("mini_small_oib.npy", "OIB_small_mask.npy", "oib_small"),
+        ("medium_oib.npy", "OIB_medium_mask.npy", "oib_medium"),
+        ("oib_within_petermann_ISRIN_time.npy", "OIB_mask.npy", "oib"),
         ("mini_test_set_cs2.npy", "CS2_mini_test_mask.npy", "cs2_mini_test"),
         ("small_test_set_cs2.npy", "CS2_small_test_mask.npy", "cs2_small_test"),
         ("medium_test_set_cs2.npy", "CS2_medium_test_mask.npy", "cs2_medium_test"),
@@ -87,19 +92,19 @@ def datasets():
         ("all_cleaned.npy", "CS2_all_mask.npy", "cs2_all"),
     ]
     projection = "Mercartor"
-    path = "data/p-data.npy"
+    path = f"{data_path}/all_cleaned.npy"
 
-    polygons = glob("../data/polygons" + "/*.geojson")
+    polygons = glob(f"{test_split_path}/polygons/*.geojson")
     polygons.sort()
 
-    test_set = "data/all_test_set_cs2_swath_id.npy"
+    test_set = f"{test_split_path}/all_test_set_cs2_swath_id.npy"
     s_train, z_train, s_val, z_val, si_train, si_val = load_data_h(path, test_set)
 
     names = [f.split("/")[-1].split(".")[0] for f in polygons]
 
     for path_test, mask_set, name in data_pairs:
-        data = load_data(f"data/{path_test}", projection)
-        data_mask_real = np.load(f"data/{mask_set}")
+        data = load_data(f"{data_path}/{path_test}", projection)
+        data_mask_real = np.load(f"{mask_path}/{mask_set}")
         s_test = data[:, 0:3]
         z_test = data[:, 3]
         yield s_train, z_train, s_test, z_test, data_mask_real, names, name
