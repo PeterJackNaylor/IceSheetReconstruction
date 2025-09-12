@@ -11,7 +11,7 @@ println("=                                                                      
 println("=                            LISTING COMPLETE                               =")
 println("=                         Get ready for take off                            =")
 println("=                         Signed:                                           =")
-println("=                    P. Naylor, A. Stokholm, N. Dionelis                     =")
+println("=                    P. Naylor, A. Stokholm.                                =")
 println("=                                                                           =")
 println("=============================================================================")
 
