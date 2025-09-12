@@ -1,6 +1,6 @@
 # IceSheetReconstruction code, part of the ISRIN code
 
-[![DOI](https://zenodo.org/badge/DOI/{{your-doi-here}}.svg)](https://doi.org/{{your-doi-here}})
+[![DOI](https://zenodo.org/badge/DOI/10.11583/DTU.30061342.svg)](https://doi.org/10.11583/DTU.30061342)
 [![arXiv](https://img.shields.io/badge/arXiv-{{arXivpaperID}}-b31b1b.svg)](https://arxiv.org/abs/{{arXivpaperID}})
 [![Journal](https://img.shields.io/badge/Journal-{{Journal%20Name}}-{{color}})]({{Official_Journal_Article_URL}})
 
