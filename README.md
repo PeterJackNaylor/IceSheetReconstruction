@@ -1,8 +1,7 @@
 # IceSheetReconstruction code, part of the ISRIN code
 
 [![DOI](https://zenodo.org/badge/DOI/10.11583/DTU.30061342.svg)](https://doi.org/10.11583/DTU.30061342)
-[![arXiv](https://img.shields.io/badge/arXiv-{{arXivpaperID}}-b31b1b.svg)](https://arxiv.org/abs/{{arXivpaperID}})
-[![Journal](https://img.shields.io/badge/Journal-{{Journal%20Name}}-{{color}})]({{Official_Journal_Article_URL}})
+[![Journal](https://img.shields.io/badge/Preprint-SSRN-cyan)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5447938#paper-references-widget)
 
 <figure>
     <img src="figures/isrin_overview.png" alt="Descriptive Alt Text" style="width:100%">
@@ -135,7 +134,7 @@ To run the pipeline with a custom configuration, you can create a new YAML file 
 IceSheetReconstruction
 ├── data/                     # Data directory (not version-controlled, must be created by user)
 │   ├── raw_data.npy          # Raw input data
-│   ├── test_index_for_train/ # Test data
+│   ├── test_index_for_train/ # Test indices for the raw data
 │   ├── test/                 # Test data
 │   └── polygons/             # Polygons
 ├── yaml_configs/                          # Configuration folder for files in YAML format
@@ -174,11 +173,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 If you use this code or data in your research, please cite our paper:
 
 ```bash
-@article{{yourCitationKey,
-    author = { {Author List} },
-    title = { {Paper Title} },
-    journal = { {Journal Name} },
-    year = { {Year} },
-    doi = { {your-doi-here} }
+@article{naylor5447938implicit,
+  title={Implicit Neural Representation for Ice Sheet Surface Elevation Reconstruction to Assess Elevation Change in High-Spatiotemporal Resolution},
+  author={Naylor, Peter and Stokholm, Andreas and Andersen, Natalia Havelund and Dionelis, Nikolaos and Paletta, Quentin and Simonsen, Sebastian Bjerregaard},
+  journal={Available at SSRN 5447938}
 }
 ```
