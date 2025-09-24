@@ -1,4 +1,4 @@
-# IceSheetReconstruction code, part of the ISRIN code
+# ISRIN project
 
 [![DOI](https://zenodo.org/badge/DOI/10.11583/DTU.30061342.svg)](https://doi.org/10.11583/DTU.30061342)
 [![Journal](https://img.shields.io/badge/Preprint-SSRN-cyan)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5447938#paper-references-widget)
