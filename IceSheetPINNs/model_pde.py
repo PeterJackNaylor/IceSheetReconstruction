@@ -290,10 +290,6 @@ class IceSheet(pinns.DensityEstimator):
         coords, velocity = self.data.velocity_next()
         T, Lat, Lon = coords[:, 0:1], coords[:, 1:2], coords[:, 2:3]
         v_hat = self.model_velocity(T, Lat, Lon)
-        # print("Shouldn't move: ", list(self.model_velocity.parameters())[0][:5,0])
-        # print("Should move: ", list(self.model_velocity.parameters())[1][:5,0])
-        # print("Should move: ", list(self.model_velocity.parameters())[2][:5])
-        # print("Should move: ", list(self.model_velocity.parameters())[3][:5,0])
         return (velocity - v_hat).reshape(-1, 1)
 
     def model_parameters(self):
@@ -302,53 +298,3 @@ class IceSheet(pinns.DensityEstimator):
             return chain(self.model.parameters(), self.model_velocity.parameters())
         else:
             return self.model.parameters()
-
-    #     return chain(self.model.parameters(), self.model_velocity.parameters())
-
-
-# class IceSheetVelocity(IceSheet):
-
-
-#     def fit(self):
-#         scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
-#         self.setup_optimizer()
-#         self.setup_scheduler()
-#         self.setup_losses()
-#         self.setup_validation_loss()
-#         self.setup_temporal_causality()
-#         self.model.train()
-#         self.best_test_score = np.inf
-
-#         iterators = self.range(1, self.hp.max_iters + 1, 1)
-
-#         for self.it in iterators:
-#             self.optimizer.zero_grad(set_to_none=True)
-
-#             data_batch = next(self.data)
-#             with torch.autocast(
-#                 device_type=self.device, dtype=self.dtype, enabled=self.use_amp
-#             ):
-#                 target_pred, target_pred_velocity = self.model(data_batch["x"])
-#                 self.compute_loss(target_pred, target_pred_velocity, **data_batch)
-#                 self.loss_balancing()
-#                 loss = self.sum_loss(self.loss_values, self.lambdas_scalar)
-#             scaler.scale(loss).backward()
-#             self.clip_gradients()
-
-#             scaler.step(self.optimizer)
-#             scale = scaler.get_scale()
-#             scaler.update()
-#             skip_lr_sched = scale > scaler.get_scale()
-#             if self.scheduler_status and not skip_lr_sched:
-#                 self.scheduler_update()
-#             if self.hp.verbose:
-#                 self.update_description_bar(iterators)
-
-#             self.test_and_maybe_save(self.it)
-#             self.optuna_stop(self.it)
-#             break_loop = False
-#             break_loop = self.early_stop(self.it, loss, break_loop)
-#             if break_loop:
-#                 break
-#         self.convert_last_loss_value()
-#         self.load_best_model()
